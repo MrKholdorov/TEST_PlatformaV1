@@ -267,6 +267,59 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           {/* TAB: Subjects lists */}
           {activeTab === 'subjects' && (
             <div className="space-y-6">
+              {/* Premium Mixed Subject Featured Section */}
+              <div 
+                onClick={() => {
+                  const virtualMixedSubject = {
+                    id: 'mixed',
+                    name: "Aralash Savollar (Barcha fanlar)",
+                    icon: 'Sparkles',
+                    description: "Matematika, Ona tili va adabiyot, Ingliz tili va Tarix fanlarining barcha savollarini o'zi ichiga olgan aralash test rejimi.",
+                    totalQuestions: LocalDbService.getQuestions().length,
+                    progress: results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
+                      ? Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore)) 
+                      : 0
+                  };
+                  setActiveSubjectForExam(virtualMixedSubject);
+                }}
+                className="relative overflow-hidden bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white rounded-3xl p-6 shadow-premium cursor-pointer group hover:shadow-glow transition-all duration-300"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full filter blur-3xl transform translate-x-12 -translate-y-12 shrink-0 group-hover:scale-110 transition duration-300"></div>
+                <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-2 max-w-xl text-left">
+                    <span className="inline-flex items-center gap-1.5 bg-white/10 text-blue-200 text-[10px] font-black px-2.5 py-0.5 rounded-full backdrop-blur-md uppercase tracking-wider">
+                      <Sparkles size={10} className="animate-spin text-amber-300" /> SUPER INOVATSIYA
+                    </span>
+                    <h3 className="font-extrabold text-xl sm:text-2xl tracking-tight leading-none text-slate-100">
+                      Barcha fanlardan aralash imtihon topshirish
+                    </h3>
+                    <p className="text-xs text-blue-100/90 leading-relaxed">
+                      Matematika, Ona tili va adabiyot, Ingliz tili va Tarix fanlarining barcha savollaridan tuzilgan universal test sinovi. Haqiqiy bilimingizni umumiy imtihon reytingida sinab ko'ring!
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-start md:items-end shrink-0 gap-1.5">
+                    <span className="text-[10px] font-mono text-blue-200 font-bold uppercase">UMUMIY SAVOLLAR</span>
+                    <span className="text-lg font-black font-mono text-white bg-white/10 px-3 py-1 rounded-xl backdrop-blur-md">
+                      {LocalDbService.getQuestions().length} ta bazada
+                    </span>
+                  </div>
+                </div>
+
+                <div className="relative mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-100 font-medium">
+                  <p>
+                    O'rtacha natijangiz: <span className="font-bold underline text-white font-mono">
+                      {results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
+                        ? `${Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore))}%` 
+                        : "topshirilmagan"}
+                    </span>
+                  </p>
+                  <span className="inline-flex items-center gap-1 font-bold text-white group-hover:translate-x-1 transition duration-155">
+                    Imtihonni Tanlash va Boshlash <ArrowRight size={14} />
+                  </span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {subjects.map((sub) => (
                   <div

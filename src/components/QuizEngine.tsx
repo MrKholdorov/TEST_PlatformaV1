@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, HelpCircle, CheckCircle, AlertTriangle, XCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Clock, HelpCircle, CheckCircle, AlertTriangle, XCircle, ArrowRight, ArrowLeft, Zap } from 'lucide-react';
 import { Question, TestSession, Subject } from '../types';
 import { LocalDbService } from '../db/localDb';
 
@@ -21,19 +21,18 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   onComplete,
   onCancel
 }) => {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
-  const [showFeedback, setShowFeedback] = useState<boolean>(false);
-  const [timeLeft, setTimeLeft] = useState<number>(session.timeLeftSeconds);
-  const [userAnswers, setUserAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>(session.answers || {});
-  
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const totalDurationSeconds = session.testType * 60; // 1 min per question
+  const [fastMode, setFastMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('otp_fast_mode');
+    return saved === null ? true : saved === 'true'; // Default to true (super snappy)
+  });
 
-  // Pull questions and randomize list without duplicates on session load
-  useEffect(() => {
-    const allQuestions = LocalDbService.getQuestions().filter(q => q.subjectId === subject.id);
+  const [questions, setQuestions] = useState<Question[]>(() => {
+    let allQuestions = [];
+    if (subject.id === 'mixed') {
+      allQuestions = LocalDbService.getQuestions();
+    } else {
+      allQuestions = LocalDbService.getQuestions().filter(q => q.subjectId === subject.id);
+    }
     
     // Choose randomly up to session.testType
     const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
@@ -41,7 +40,6 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
     // Safeguard in case total questions are fewer than the requested type
     if (selected.length < session.testType) {
-      // Duplicate to reach requirement
       const backupList = [...selected];
       while (selected.length < session.testType && backupList.length > 0) {
         selected.push({
@@ -51,10 +49,50 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
       }
     }
 
-    setQuestions(selected);
+    // Dynamic Options Scrambler
+    const processed = selected.map(q => {
+      const originalOptions = [
+        { origKey: 'A', text: q.options.A },
+        { origKey: 'B', text: q.options.B },
+        { origKey: 'C', text: q.options.C },
+        { origKey: 'D', text: q.options.D }
+      ];
+      
+      // Randomly sort the options list
+      const scrambled = [...originalOptions].sort(() => Math.random() - 0.5);
+      
+      // Find where the original correct answer ended up
+      const correctIdx = scrambled.findIndex(opt => opt.origKey === q.correctAnswer);
+      const keys: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+      const newCorrectAnswer = keys[correctIdx !== -1 ? correctIdx : 0];
+      
+      return {
+        ...q,
+        options: {
+          A: scrambled[0].text,
+          B: scrambled[1].text,
+          C: scrambled[2].text,
+          D: scrambled[3].text
+        },
+        correctAnswer: newCorrectAnswer
+      };
+    });
 
-    // Find the first unanswered question
-    const unansweredIdx = selected.findIndex(q => !userAnswers[q.id]);
+    return processed;
+  });
+
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
+  const [showFeedback, setShowFeedback] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<number>(session.timeLeftSeconds);
+  const [userAnswers, setUserAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>(session.answers || {});
+  
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const totalDurationSeconds = session.testType * 60; // 1 min per question
+
+  // Find the first unanswered question
+  useEffect(() => {
+    const unansweredIdx = questions.findIndex(q => !userAnswers[q.id]);
     if (unansweredIdx !== -1) {
       setCurrentIndex(unansweredIdx);
     }
@@ -108,6 +146,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
     LocalDbService.saveSession(updatedSession);
 
     // Stagger slightly for user absorption (Quizizz style) & auto move to next
+    const delay = fastMode ? 400 : 1500;
     setTimeout(() => {
       setShowFeedback(false);
       setSelectedAnswer(null);
@@ -118,7 +157,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
         // Last question reached, auto submit test!
         handleSubmitTest(updatedAnswers);
       }
-    }, 1500);
+    }, delay);
   };
 
   const handleAutoSubmit = () => {
@@ -218,17 +257,32 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            if (confirm("Haqiqatdan ham imtihonni yakunlamasdan chiqmoqchimisiz? Natija saqlanmaydi!")) {
-              onCancel();
-            }
-          }}
-          className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 px-4 py-2.5 rounded-xl transition duration-150 active:scale-95"
-          id="btn-quiz-exit"
-        >
-          Bekor qilish & Chiqish
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Fast-mode toggle option */}
+          <button
+            onClick={() => {
+              const next = !fastMode;
+              setFastMode(next);
+              localStorage.setItem('otp_fast_mode', String(next));
+            }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition duration-150 cursor-pointer ${fastMode ? 'bg-amber-500/10 text-amber-600 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800'}`}
+          >
+            <Zap size={14} className={fastMode ? "text-amber-500 fill-amber-500 animate-pulse shrink-0" : "shrink-0"} />
+            <span>Tezkor test ({fastMode ? 'Tezlik: A’lo' : 'Normal'})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (confirm("Haqiqatdan ham imtihonni yakunlamasdan chiqmoqchimisiz? Natija saqlanmaydi!")) {
+                onCancel();
+              }
+            }}
+            className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 px-4 py-2.5 rounded-xl transition duration-150 active:scale-95 cursor-pointer"
+            id="btn-quiz-exit"
+          >
+            Bekor qilish & Chiqish
+          </button>
+        </div>
       </div>
 
       {/* 5 Minute Warning Banner */}

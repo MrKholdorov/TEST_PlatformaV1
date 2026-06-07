@@ -99,7 +99,17 @@ export default function App() {
     if (!currentUser) return;
 
     const subjects = LocalDbService.getSubjects();
-    const sub = subjects.find(s => s.id === subjectId);
+    let sub = subjects.find(s => s.id === subjectId);
+    if (!sub && subjectId === 'mixed') {
+      sub = {
+        id: 'mixed',
+        name: "Aralash Savollar (Barcha fanlar)",
+        icon: 'Sparkles',
+        description: "Barcha mavjud fanlar doirasida aralash tasodifiy test sinovi.",
+        totalQuestions: LocalDbService.getQuestions().length,
+        progress: 0
+      };
+    }
     if (!sub) return;
 
     const newSession: TestSession = {
