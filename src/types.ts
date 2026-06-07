@@ -13,6 +13,7 @@ export interface Profile {
   lastLogin: string;
   createdAt: string;
   xp: number;
+  isBlocked?: boolean; // Tizimga kirishni cheklash
 }
 
 export interface Subject {

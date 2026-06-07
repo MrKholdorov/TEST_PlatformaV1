@@ -36,6 +36,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
   // Questions Management
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  const [editQuestId, setEditQuestId] = useState<string | null>(null);
   const [newQuest, setNewQuest] = useState({
     questionText: '',
     optionA: '',
@@ -146,18 +147,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
     const questionText = newQuest.questionText.trim();
     if (!questionText) return;
 
-    LocalDbService.saveQuestion({
-      id: `q-${Date.now()}`,
-      subjectId: subjId,
-      questionText,
-      options: {
-        A: newQuest.optionA,
-        B: newQuest.optionB,
-        C: newQuest.optionC,
-        D: newQuest.optionD
-      },
-      correctAnswer: newQuest.correctAnswer
-    });
+    if (editQuestId) {
+      LocalDbService.saveQuestion({
+        id: editQuestId,
+        subjectId: subjId,
+        questionText,
+        options: {
+          A: newQuest.optionA,
+          B: newQuest.optionB,
+          C: newQuest.optionC,
+          D: newQuest.optionD
+        },
+        correctAnswer: newQuest.correctAnswer
+      });
+      setEditQuestId(null);
+      alert("Test savoli muvaffaqiyatli tahrirlandi!");
+    } else {
+      LocalDbService.saveQuestion({
+        id: `q-${Date.now()}`,
+        subjectId: subjId,
+        questionText,
+        options: {
+          A: newQuest.optionA,
+          B: newQuest.optionB,
+          C: newQuest.optionC,
+          D: newQuest.optionD
+        },
+        correctAnswer: newQuest.correctAnswer
+      });
+      alert("Yangi test savoli muvaffaqiyatli kiritildi!");
+    }
 
     setNewQuest({
       questionText: '',
@@ -169,7 +188,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
     });
 
     loadData();
-    alert("Yangi test savoli muvaffaqiyatli kiritildi!");
+  };
+
+  const handleEditQuestionTrigger = (q: Question) => {
+    setEditQuestId(q.id);
+    setNewQuest({
+      questionText: q.questionText,
+      optionA: q.options.A,
+      optionB: q.options.B,
+      optionC: q.options.C,
+      optionD: q.options.D,
+      correctAnswer: q.correctAnswer
+    });
   };
 
   const handleDeleteQuestion = (id: string) => {
@@ -177,6 +207,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
       LocalDbService.deleteQuestion(id);
       loadData();
     }
+  };
+
+  const handleToggleBlockUser = (user: Profile) => {
+    const updated = {
+      ...user,
+      isBlocked: !user.isBlocked
+    };
+    LocalDbService.saveProfile(updated);
+    setSelectedAuditUser(updated);
+    loadData();
+    alert(`O'quvchi "${user.fullName}" holati muvaffaqiyatli daxldor bo'ldi! Hozirgi holat: ${updated.isBlocked ? "BLOKLANGAN (Kirish cheklangan)" : "FAQOL"}`);
+  };
+
+  const handleUpdateUserCredentials = (e: React.FormEvent, user: Profile) => {
+    e.preventDefault();
+    const loginInput = (e.currentTarget.querySelector('#edit-user-login-input') as HTMLInputElement)?.value.trim();
+    const pwdInput = (e.currentTarget.querySelector('#edit-user-pwd-input') as HTMLInputElement)?.value.trim();
+
+    if (!loginInput || !pwdInput) {
+      alert("Xatolik: maydonlar bo'sh bo'lishi mumkin emas!");
+      return;
+    }
+
+    const restOfUsers = LocalDbService.getProfiles().filter(p => p.id !== user.id);
+    if (restOfUsers.some(p => p.login.toLowerCase() === loginInput.toLowerCase())) {
+      alert("Xatolik: Ushbu unikal login band, boshqasini tanlang!");
+      return;
+    }
+
+    const updated = {
+      ...user,
+      login: loginInput,
+      password: pwdInput
+    };
+    LocalDbService.saveProfile(updated);
+    setSelectedAuditUser(updated);
+    loadData();
+    alert(`Muvaffaqiyatli yangilandi!\n\nUnikal Login: ${loginInput}\nYangi Parol: ${pwdInput}`);
   };
 
   // Bulk Import Action
@@ -449,7 +517,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
               {/* Category select block & Form */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">❓ TEST SAVOLI QO'SHISH VA FILTRI</h3>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">
+                    {editQuestId ? '✏️ TEST SAVOLINI TAHRIRLASH' : '❓ YANGI TEST SAVOLI QO\'SHISH'}
+                  </h3>
                   
                   <div className="flex gap-2 items-center text-xs">
                     <span className="font-mono">Fannini tanlang:</span>
@@ -489,7 +559,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                           value={(newQuest as any)[`option${opt}`]}
                           onChange={(e) => setNewQuest({ ...newQuest, [`option${opt}`]: e.target.value })}
                           className="w-full px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs"
-                          placeholder={`Variant ${opt} javobi...`}
+                          placeholder={`Variant {opt} javobi...`}
                         />
                       </div>
                     ))}
@@ -508,12 +578,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                     </select>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-[#0F172A] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition duration-150 shadow-premium active:scale-95"
-                  >
-                    Test savolini bazaga qo'shish
-                  </button>
+                  <div className="flex gap-2">
+                    {editQuestId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditQuestId(null);
+                          setNewQuest({
+                            questionText: '',
+                            optionA: '',
+                            optionB: '',
+                            optionC: '',
+                            optionD: '',
+                            correctAnswer: 'A'
+                          });
+                        }}
+                        className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-300 font-bold rounded-xl text-xs transition active:scale-95 cursor-pointer"
+                      >
+                        Bekor qilish
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#0F172A] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition duration-150 shadow-premium active:scale-95 cursor-pointer"
+                    >
+                      {editQuestId ? "Tahrirlashni saqlash" : "Test savolini bazaga qo'shish"}
+                    </button>
+                  </div>
                 </form>
               </div>
 
@@ -530,10 +621,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                         className="p-3 border border-slate-100 dark:border-slate-850 rounded-xl hover:shadow-premium transition flex justify-between gap-4 items-center"
                       >
                         <div>
-                          <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                          <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 text-left">
                             {idx + 1}. {q.questionText}
                           </p>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[10px] text-slate-400 font-mono">
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[10px] text-slate-400 font-mono text-left">
                             <span>A: {q.options.A}</span>
                             <span>B: {q.options.B}</span>
                             <span>C: {q.options.C}</span>
@@ -542,12 +633,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => handleDeleteQuestion(q.id)}
-                          className="p-2 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/40 rounded-lg transition shrink-0 cursor-pointer"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => handleEditQuestionTrigger(q)}
+                            className="p-2 bg-yellow-50 hover:bg-yellow-105 text-yellow-600 dark:bg-yellow-950/20 dark:hover:bg-yellow-905/40 rounded-lg transition cursor-pointer"
+                            title="Tahrirlash"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuestion(q.id)}
+                            className="p-2 bg-red-50 hover:bg-red-100 text-red-656 bg-red-600/10 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/40 rounded-lg transition cursor-pointer"
+                            title="O'chirish"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -696,6 +797,65 @@ Javob: B"
                           <p className="text-[10px] text-slate-400 font-bold">XP (Ball):</p>
                           <p className="font-bold text-blue-600 mt-0.5">{selectedAuditUser.xp} XP</p>
                         </div>
+                      </div>
+
+                      {/* Admin Management Controls */}
+                      <div className="p-4 border border-slate-250 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40 space-y-3 text-left">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider font-mono">⚠️ Tizim Nazorati & Tahriri</h4>
+                        <div className="flex flex-wrap items-center gap-3">
+                          {selectedAuditUser.isBlocked ? (
+                            <button
+                              onClick={() => handleToggleBlockUser(selectedAuditUser)}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer transition active:scale-95 shadow-glow"
+                            >
+                              Blokdan Chiqarish (Unblock)
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleBlockUser(selectedAuditUser)}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl cursor-pointer transition active:scale-95 shadow-glow"
+                            >
+                              Kirishni Cheklash (Block User)
+                            </button>
+                          )}
+                          <span className="text-[10px] font-medium text-slate-400">
+                            Foydalanuvchi holati: {selectedAuditUser.isBlocked ? <span className="text-red-500 font-black">BLOKLANGAN</span> : <span className="text-emerald-500 font-black">FAQOL (RUXSAT ETILGAN)</span>}
+                          </span>
+                        </div>
+
+                        {/* Inline credentials changer */}
+                        <form onSubmit={(e) => handleUpdateUserCredentials(e, selectedAuditUser)} className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                          <div>
+                            <label className="block text-[10px] text-slate-400 font-bold mb-1">Unikal Kirish Logini:</label>
+                            <input
+                              type="text"
+                              required
+                              id="edit-user-login-input"
+                              key={`login-${selectedAuditUser.id}-${selectedAuditUser.login}`}
+                              defaultValue={selectedAuditUser.login}
+                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 font-bold mb-1">Yangi Kirish Paroli:</label>
+                            <input
+                              type="text"
+                              required
+                              id="edit-user-pwd-input"
+                              key={`pwd-${selectedAuditUser.id}-${selectedAuditUser.password || 'pwd'}`}
+                              defaultValue={selectedAuditUser.password || selectedAuditUser.login}
+                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-mono"
+                            />
+                          </div>
+                          <div className="sm:col-span-2 text-right">
+                            <button
+                              type="submit"
+                              className="px-4 py-1.5 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer transition text-[10px]"
+                            >
+                              Profil Ma'lumotlarini Yangilash
+                            </button>
+                          </div>
+                        </form>
                       </div>
 
                       {/* Result listing */}

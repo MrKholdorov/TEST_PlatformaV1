@@ -48,8 +48,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       return;
     }
 
-    // Since we don't store plain password encryption, we accept simple matches or simulation
-    // In a real DB this is hashed.
+    // Strict Account Blocking Check
+    if (found.isBlocked) {
+      alert("⚠️ KIRISH JADVALI RAD ETILDI: Ushbu o'quvchi profili administrator tomonidan vaqtincha bloklangan yoki kirishi cheklangan!");
+      LocalDbService.addLog(found.id, found.fullName, "Kirish urinishi rad etildi", "Bloklangan akkauntdan tizimga kirishga harakat qildi.");
+      return;
+    }
+
+    // Strict Password Validation
+    if (found.password && found.password !== loginForm.password) {
+      alert("Xatolik: Kiritilgan maxfiy kalitparol noto'g'ri!");
+      return;
+    }
+
     alert(`Xush kelibsiz, ${found.fullName}!`);
     
     // Update last login
@@ -80,6 +91,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       fullName: registerForm.fullName,
       email: registerForm.email,
       phone: registerForm.phone,
+      password: registerForm.password, // Save password
       lastLogin: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       xp: 150 // Initial welcoming score
