@@ -34,24 +34,33 @@ export default function App() {
 
   // Load theme and previous user/admin session if active
   useEffect(() => {
-    // Local DB bootstrap
-    LocalDbService.initialize();
+    // Local DB boot and backend synchronization
+    const bootDbAndSync = async () => {
+      // First run local initialization
+      LocalDbService.initialize();
+      // Sync with server persistent database
+      await LocalDbService.syncWithBackend();
+
+      // Recover User session if saved (Keep logged in)
+      const savedUser = localStorage.getItem('otp_active_user');
+      if (savedUser) {
+        try {
+          setCurrentUser(JSON.parse(savedUser));
+        } catch (e) {}
+      }
+      
+      const savedAdmin = localStorage.getItem('otp_active_admin');
+      if (savedAdmin) {
+        setAdminEmail(savedAdmin);
+      }
+    };
+
+    bootDbAndSync();
 
     // Recover Theme
     const savedTheme = localStorage.getItem('otp_theme') as 'light' | 'dark' || 'light';
     setTheme(savedTheme);
     applyThemeClass(savedTheme);
-
-    // Recover User session if saved (Remember me logic)
-    const savedUser = localStorage.getItem('otp_active_user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-    
-    const savedAdmin = localStorage.getItem('otp_active_admin');
-    if (savedAdmin) {
-      setAdminEmail(savedAdmin);
-    }
   }, []);
 
   const applyThemeClass = (t: 'light' | 'dark') => {

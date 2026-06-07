@@ -39,6 +39,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   // Certificates modal state
   const [reviewedCertificate, setReviewedCertificate] = useState<TestResult | null>(null);
 
+  // Notification modal detail state
+  const [selectedNotification, setSelectedNotification] = useState<DBNotification | null>(null);
+
   useEffect(() => {
     loadDashboardData();
   }, [profile.id, activeTab, leaderboardType]);
@@ -81,6 +84,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const handleMarkNotifsRead = () => {
     LocalDbService.markNotificationsRead(profile.id);
     loadDashboardData();
+  };
+
+  const handleNotificationClick = (n: DBNotification) => {
+    setSelectedNotification(n);
+    if (!n.isRead) {
+      LocalDbService.markSingleNotificationRead(n.id);
+      loadDashboardData();
+    }
   };
 
   // High quality computed statistics
@@ -526,20 +537,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   {notifications.map((n) => {
                     let borderTheme = "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900";
                     if (!n.isRead) {
-                      borderTheme = "border-blue-200 bg-blue-50/20 dark:bg-blue-950/20 dark:border-blue-900/60";
+                      borderTheme = "border-blue-200 bg-blue-50/20 dark:bg-blue-950/20 dark:border-blue-900/60 font-medium";
                     }
                     return (
                       <div 
                         key={n.id} 
-                        className={`p-4 border rounded-xl text-left transition ${borderTheme}`}
+                        onClick={() => handleNotificationClick(n)}
+                        className={`p-4 border rounded-xl text-left transition duration-150 cursor-pointer hover:shadow-premium hover:-translate-y-[1px] active:scale-[0.99] select-none ${borderTheme}`}
                       >
                         <div className="flex justify-between items-start gap-4">
                           <div>
                             <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                              {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-505 bg-blue-600 animate-ping shrink-0" />}
+                              {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0" />}
                               {n.title}
                             </h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
                               {n.message}
                             </p>
                           </div>
@@ -642,6 +654,55 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               date={new Date(reviewedCertificate.createdAt).toLocaleDateString()}
               certificateNumber={reviewedCertificate.id.toUpperCase().replace('RES-', 'CERT-').substring(0, 14)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* MODAL Popup for Notification Detail viewer */}
+      {selectedNotification && (
+        <div className="fixed inset-0 z-50 bg-[#000000]/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-premium text-left animate-scale-up space-y-4">
+            
+            {/* Header / Type badging */}
+            <div className="flex justify-between items-center">
+              <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full ${
+                selectedNotification.type === 'warning' 
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' 
+                  : selectedNotification.type === 'success'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                  : selectedNotification.type === 'info'
+                  ? 'bg-[#E0F2FE] text-[#0369A1] dark:bg-blue-950/40 dark:text-blue-400'
+                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-350'
+              }`}>
+                {selectedNotification.type || 'tizim'} Xabari
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {new Date(selectedNotification.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+
+            {/* Title */}
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
+                {selectedNotification.title}
+              </h3>
+            </div>
+
+            {/* Message Body */}
+            <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-sans border-t border-slate-100 dark:border-slate-900 pt-3">
+              {selectedNotification.message}
+            </p>
+
+            {/* Close Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedNotification(null)}
+                className="px-5 py-2 bg-[#0F172A] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition duration-150 active:scale-95 cursor-pointer"
+              >
+                Tushunarli
+              </button>
+            </div>
+
           </div>
         </div>
       )}

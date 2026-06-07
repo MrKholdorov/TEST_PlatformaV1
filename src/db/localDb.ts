@@ -542,38 +542,7 @@ const INITIAL_QUESTIONS: Question[] = [
   }
 ];
 
-// Generates multiple random questions to fill up 100 questions per subject if requested,
-// making sure that tests don't fail for lack of questions.
-const populateMockQuestions = (base: Question[]): Question[] => {
-  const result = [...base];
-  const subjects = ['subj-1', 'subj-2', 'subj-3', 'subj-4'];
-  const subjectsNames = {
-    'subj-1': 'Ona tili',
-    'subj-2': 'Matematika mahorati',
-    'subj-3': 'Tarix saboqlari',
-    'subj-4': 'Ingliz tili testi'
-  };
-
-  subjects.forEach(sid => {
-    const list = result.filter(q => q.subjectId === sid);
-    let count = list.length;
-    // We want at least 100 questions per subject to support 20, 30, 50, 100 questions
-    while (count < 110) {
-      const template = list[Math.floor(Math.random() * list.length)];
-      count++;
-      result.push({
-        id: `q-auto-${sid}-${count}`,
-        subjectId: sid,
-        questionText: `${template.questionText} (Qo'shimcha variant #${count - 10})`,
-        options: { ...template.options },
-        correctAnswer: template.correctAnswer
-      });
-    }
-  });
-  return result;
-};
-
-const SEED_QUESTIONS = populateMockQuestions(INITIAL_QUESTIONS);
+const SEED_QUESTIONS = INITIAL_QUESTIONS;
 
 // Seed initial rankings/leaderboard entries with realistic high-end stats
 const SEED_RANKINGS: Ranking[] = [
@@ -637,6 +606,18 @@ export class LocalDbService {
   }
 
   static initialize() {
+    // Migration: Clean existing duplicate questions containing 'q-auto' from previous version
+    const currentRaw = localStorage.getItem('otp_questions');
+    if (currentRaw) {
+      try {
+        const list = JSON.parse(currentRaw);
+        if (list.some((q: any) => q.id.includes('q-auto'))) {
+          const filtered = list.filter((q: any) => !q.id.includes('q-auto'));
+          localStorage.setItem('otp_questions', JSON.stringify(filtered));
+        }
+      } catch (_) {}
+    }
+
     this.initKey('otp_profiles', SEED_PROFILES);
     this.initKey('otp_subjects', INITIAL_SUBJECTS);
     this.initKey('otp_questions', SEED_QUESTIONS);
@@ -657,6 +638,64 @@ export class LocalDbService {
 
   private static set(key: string, data: any) {
     localStorage.setItem(key, JSON.stringify(data));
+    this.pushToBackend();
+  }
+
+  // Full-Stack Synchronization Engines
+  static getPayload() {
+    return {
+      otp_profiles: localStorage.getItem('otp_profiles') ? JSON.parse(localStorage.getItem('otp_profiles')!) : [],
+      otp_subjects: localStorage.getItem('otp_subjects') ? JSON.parse(localStorage.getItem('otp_subjects')!) : [],
+      otp_questions: localStorage.getItem('otp_questions') ? JSON.parse(localStorage.getItem('otp_questions')!) : [],
+      otp_sessions: localStorage.getItem('otp_sessions') ? JSON.parse(localStorage.getItem('otp_sessions')!) : [],
+      otp_results: localStorage.getItem('otp_results') ? JSON.parse(localStorage.getItem('otp_results')!) : [],
+      otp_rankings: localStorage.getItem('otp_rankings') ? JSON.parse(localStorage.getItem('otp_rankings')!) : [],
+      otp_notifications: localStorage.getItem('otp_notifications') ? JSON.parse(localStorage.getItem('otp_notifications')!) : [],
+      otp_activity_logs: localStorage.getItem('otp_activity_logs') ? JSON.parse(localStorage.getItem('otp_activity_logs')!) : [],
+      otp_telegram_config: localStorage.getItem('otp_telegram_config') ? JSON.parse(localStorage.getItem('otp_telegram_config')!) : {}
+    };
+  }
+
+  private static pushTimeout: any = null;
+
+  static pushToBackend() {
+    if (this.pushTimeout) {
+      clearTimeout(this.pushTimeout);
+    }
+    this.pushTimeout = setTimeout(() => {
+      const payload = this.getPayload();
+      fetch('/api/db/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload })
+      }).catch(e => console.warn("Failed to push DB to server:", e));
+    }, 150);
+  }
+
+  static async syncWithBackend(): Promise<void> {
+    try {
+      const res = await fetch('/api/db/data');
+      const json = await res.json();
+      if (json.success && json.data) {
+        const serverData = json.data;
+        Object.keys(serverData).forEach(key => {
+          localStorage.setItem(key, JSON.stringify(serverData[key]));
+        });
+        console.log("Database synchronized fully from Express backend server.");
+      } else {
+        // First initialization post
+        this.initialize();
+        const payload = this.getPayload();
+        await fetch('/api/db/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payload })
+        });
+        console.log("Server side database initialized with client seeds.");
+      }
+    } catch (error) {
+      console.warn("Backend sync failed. Running off local data stores:", error);
+    }
   }
 
   // Profiles
@@ -857,6 +896,17 @@ export class LocalDbService {
     const list = this.get<DBNotification>('otp_notifications');
     const updated = list.map(n => {
       if (!userId || n.userId === userId) {
+        return { ...n, isRead: true };
+      }
+      return n;
+    });
+    this.set('otp_notifications', updated);
+  }
+
+  static markSingleNotificationRead(notifId: string) {
+    const list = this.get<DBNotification>('otp_notifications');
+    const updated = list.map(n => {
+      if (n.id === notifId) {
         return { ...n, isRead: true };
       }
       return n;
