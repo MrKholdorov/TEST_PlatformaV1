@@ -1,0 +1,22 @@
+{
+  "name": "Online Imtihon Platformasi",
+  "short_name": "OnlineImtihon",
+  "description": "Premium o'quv markazi uchun professional test va imtihon topshirish platformasi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/fluency/192/000000/test-passed.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://img.icons8.com/fluency/512/000000/test-passed.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

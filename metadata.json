@@ -1,0 +1,6 @@
+{
+  "name": "Online Testing Platform",
+  "description": "Premium online testing and examination platform with advanced analytics, interactive quiz engines, and comprehensive reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
