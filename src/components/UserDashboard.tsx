@@ -27,7 +27,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onLogOut,
   onAdminNavigation
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('subjects');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const saved = localStorage.getItem('dashboard_active_tab') || 'subjects';
+    return saved === 'notifications' ? 'subjects' : saved;
+  });
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
   const [notifications, setNotifications] = useState<DBNotification[]>([]);
@@ -234,18 +237,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               { id: 'subjects', label: '📚 Fanlar', icon: BookOpen },
               { id: 'analytics', label: '📊 Tahlillar', icon: BarChart3 },
               { id: 'history', label: '📜 Tarix', icon: History },
-              { id: 'rankings', label: '🏆 Peshqadamlar', icon: Trophy },
-              { id: 'notifications', label: '🔔 Bildirishnomalar', icon: Bell, badgeCount: notifications.filter(n=>!n.isRead).length }
+              { id: 'rankings', label: '🏆 Peshqadamlar', icon: Trophy }
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  localStorage.setItem('dashboard_active_tab', tab.id);
+                }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-sans tracking-tight text-[13px] font-semibold transition duration-150 cursor-pointer ${activeTab === tab.id ? 'bg-[#0F172A] text-white dark:bg-slate-850' : 'text-slate-500 hover:bg-slate-150/50 dark:hover:bg-slate-800'}`}
               >
                 <span>{tab.label}</span>
-                {tab.badgeCount && tab.badgeCount > 0 ? (
-                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold font-sans tracking-tight animate-bounce">{tab.badgeCount}</span>
-                ) : null}
               </button>
             ))}
           </div>

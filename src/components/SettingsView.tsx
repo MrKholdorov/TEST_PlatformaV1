@@ -159,7 +159,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       setSuccessMsg('Telegram akkauntingiz muvaffaqiyatli ulandi!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } else {
-      alert("Bu funksiya asosan Telegram Mini App ichida ishlaydi. Iltimos bot orqali kiring, yoki quyidagi qo'lda bog'lash maydonidan foydalaning.");
+      const linkUrl = `https://t.me/TestONLINE_uzbot?start=link_${currentUser.id}`;
+      window.open(linkUrl, '_blank');
+      setSuccessMsg("Telegram botga yo'naltirildingiz! Botda 'Start' tugmasini bossangiz, akkauntingiz avtomatik ulanadi!");
+      setTimeout(() => setSuccessMsg(''), 6000);
     }
   };
 
@@ -517,10 +520,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     onClick={handleLinkTelegramAuto}
                     className="flex items-center gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition shadow-md shadow-blue-500/10 cursor-pointer"
                   >
-                    <span>🛡️ Mini App orqali Avto ulash</span>
+                    <span>⚡ Bot orqali Avto ulash (Tezkor)</span>
                   </button>
                   <a
-                    href="https://t.me/OnlineImtihonDuelBot" 
+                    href="https://t.me/TestONLINE_uzbot" 
                     target="_blank" 
                     rel="noreferrer"
                     className="flex items-center gap-2 text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/80 font-bold py-2 px-4 rounded-xl transition cursor-pointer"
@@ -534,7 +537,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <div className="text-xs space-y-2 text-slate-600 dark:text-slate-400 max-w-2xl">
                 <p className="font-bold text-slate-800 dark:text-slate-200">Qo'lda ulanish bosqichlari:</p>
                 <ol className="list-decimal pl-5 space-y-1.5 font-medium">
-                  <li>Telegram @OnlineImtihonDuelBot ga kiring va <b>/start</b> buyrug'ini bosing.</li>
+                  <li>Telegram @TestONLINE_uzbot ga kiring va <b>/start</b> buyrug'ini bosing.</li>
                   <li>Telegramda o'z ID raqamingizni aniqlang (yoki bot orqali avtomatik profil ochganda ko'ring).</li>
                   <li>Ushbu ID raqamini pastdagi <b>Telegram User ID</b> maydoniga kiriting va Saqlang.</li>
                 </ol>

@@ -206,6 +206,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             </button>
           </div>
 
+          {/* Telegram User Hook Banner */}
+          {getTelegramUser() && (
+            <div className="mb-6 p-4 bg-blue-50/80 dark:bg-blue-950/25 border border-blue-100/70 dark:border-blue-900/45 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+              <div>
+                <p className="text-xs font-bold text-blue-800 dark:text-blue-400">🤖 Telegram akkauntingiz aniqlandi</p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed font-semibold">
+                  Ismingiz: <b>{getTelegramUser().first_name} {getTelegramUser().last_name || ''}</b>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleTgRegister}
+                className="text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shrink-0 transition cursor-pointer"
+              >
+                📝 Ma'lumotlarni to'ldirish
+              </button>
+            </div>
+          )}
+
           {/* Form Content: LOGIN MODE */}
           {isLoginMode ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">

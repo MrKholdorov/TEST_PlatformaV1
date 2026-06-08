@@ -6,10 +6,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Phone, Compass, Sun, Moon, LogOut, FileCheck, Landmark,
-  Award, HelpCircle, Activity, Globe, Send, UserCheck, Play, ArrowRight, Zap 
+  Award, HelpCircle, Activity, Globe, Send, UserCheck, Play, ArrowRight, Zap,
+  Bell, CheckCheck
 } from 'lucide-react';
 
-import { Profile, Subject, TestSession, TestResult } from './types';
+import { Profile, Subject, TestSession, TestResult, DBNotification } from './types';
 import { LocalDbService } from './db/localDb';
 import { evaluateMistakes, updateUserStats, evaluateAchievements } from './lib/gameLogic';
 import { sendTelegramNotification, sendAdminNotification } from './lib/telegramClient';
@@ -46,6 +47,10 @@ export default function App() {
   // Router views
   const [activeView, setActiveView] = useState<string>('dashboard');
 
+  // Notifications state
+  const [notifications, setNotifications] = useState<DBNotification[]>([]);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState<boolean>(false);
+
   // Load theme and previous user/admin session if active
   useEffect(() => {
     // Local DB boot and backend synchronization
@@ -57,9 +62,16 @@ export default function App() {
 
       // Recover User session if saved (Keep logged in)
       const savedUser = localStorage.getItem('otp_active_user');
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasDuel = urlParams.has('duel');
+      
       if (savedUser) {
         try {
-          setCurrentUser(JSON.parse(savedUser));
+          const userObj = JSON.parse(savedUser);
+          setCurrentUser(userObj);
+          if (hasDuel) {
+            setActiveView('duels');
+          }
         } catch (e) {}
       }
       
@@ -100,11 +112,48 @@ export default function App() {
     applyThemeClass(next);
   };
 
+  // Sync notifications state with local DB
+  useEffect(() => {
+    if (!currentUser) {
+      setNotifications([]);
+      return;
+    }
+
+    const fetchNotifications = () => {
+      const list = LocalDbService.getNotifications(currentUser.id);
+      setNotifications(list);
+    };
+
+    fetchNotifications();
+
+    // Recheck notifications count periodically (every 4 seconds) so triggers are live
+    const intervalId = setInterval(fetchNotifications, 4000);
+    return () => clearInterval(intervalId);
+  }, [currentUser]);
+
+  const handleMarkAllNotificationsRead = () => {
+    if (!currentUser) return;
+    LocalDbService.markNotificationsRead(currentUser.id);
+    setNotifications(LocalDbService.getNotifications(currentUser.id));
+  };
+
+  const handleMarkSingleNotificationRead = (notifId: string) => {
+    LocalDbService.markSingleNotificationRead(notifId);
+    if (currentUser) {
+      setNotifications(LocalDbService.getNotifications(currentUser.id));
+    }
+  };
+
   // User auth triggers
   const handleAuthSuccess = (user: Profile) => {
     setCurrentUser(user);
     localStorage.setItem('otp_active_user', JSON.stringify(user));
-    setActiveView('dashboard');
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('duel')) {
+      setActiveView('duels');
+    } else {
+      setActiveView('dashboard');
+    }
   };
 
   // Administrative auth triggers
@@ -309,6 +358,116 @@ export default function App() {
                 <span className="bg-amber-100 text-amber-800 font-sans tracking-tight text-[9px] font-bold px-2 py-1 rounded hidden sm:inline-block mr-2">
                   🔐 ADMIN FAOL
                 </span>
+              )}
+
+              {/* Notifications Button & Dropdown */}
+              {currentUser && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                    className="p-2 w-10 h-10 rounded-full flex items-center justify-center bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 transition-all active:scale-95 cursor-pointer mr-1.5 border border-slate-200/35 dark:border-slate-700/40 shadow-sm relative group"
+                    aria-label="Bildirishnomalar"
+                    title="Bildirishnomalar"
+                  >
+                    <Bell size={18} className={`transition-transform group-hover:scale-110 ${notifications.some(n => !n.isRead) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`} />
+                    
+                    {/* Badge Count */}
+                    {notifications.filter(n => !n.isRead).length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold border-2 border-white dark:border-slate-900 animate-pulse">
+                        {notifications.filter(n => !n.isRead).length}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotificationsDropdown && (
+                    <>
+                      {/* Invisible backdrop to dismiss dropdown on click away */}
+                      <div 
+                        className="fixed inset-0 z-40 cursor-default" 
+                        onClick={() => setShowNotificationsDropdown(false)} 
+                      />
+                      
+                      {/* Dropdown Container */}
+                      <div className="absolute right-0 mt-2.5 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-850 dark:text-slate-100 animate-in fade-in slide-in-from-top-3 duration-250">
+                        
+                        {/* Header */}
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 select-none">
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider font-sans">Bildirishnomalar</span>
+                            {notifications.filter(n => !n.isRead).length > 0 && (
+                              <span className="bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">
+                                {notifications.filter(n => !n.isRead).length} yangi
+                              </span>
+                            )}
+                          </div>
+                          
+                          {notifications.filter(n => !n.isRead).length > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAllNotificationsRead();
+                              }}
+                              className="text-[11px] font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 cursor-pointer transition focus:outline-none"
+                            >
+                              <CheckCheck size={13} />
+                              Hammasini o'qildi qilish
+                            </button>
+                          )}
+                        </div>
+
+                        {/* List */}
+                        <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
+                          {notifications.length === 0 ? (
+                            <div className="py-10 px-4 text-center text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center gap-2.5 select-none">
+                              <Bell size={32} className="opacity-30 stroke-[1.5]" />
+                              <p className="text-xs font-semibold leading-normal">Hozircha bildirishnomalar mavjud emas</p>
+                            </div>
+                          ) : (
+                            notifications.map((n) => {
+                              return (
+                                <div
+                                  key={n.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkSingleNotificationRead(n.id);
+                                  }}
+                                  className={`p-4 transition duration-150 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left relative flex items-start gap-3 select-none ${
+                                    !n.isRead ? 'bg-blue-50/25 dark:bg-blue-950/15' : ''
+                                  }`}
+                                >
+                                  {/* Notification Type Indicator Dot */}
+                                  <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${
+                                    n.type === 'success' ? 'bg-emerald-500 animate-pulse' :
+                                    n.type === 'warning' ? 'bg-amber-500' :
+                                    n.type === 'info' ? 'bg-blue-500' : 'bg-slate-400'
+                                  }`} />
+                                  
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className={`text-xs text-slate-900 dark:text-slate-100 ${!n.isRead ? 'font-bold' : 'font-semibold'}`}>
+                                        {n.title}
+                                      </p>
+                                      <span className="text-[9px] text-slate-400 dark:text-slate-500 shrink-0 font-medium font-mono">
+                                        {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal break-words font-medium">
+                                      {n.message}
+                                    </p>
+                                    
+                                    {!n.isRead && (
+                                      <span className="absolute right-3 bottom-3 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
               {/* Theme Toggle Button */}

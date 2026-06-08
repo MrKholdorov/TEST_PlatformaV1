@@ -1,6 +1,6 @@
 import React from 'react';
 import { Profile, UserStats, Achievement } from '../types';
-import { Award, Target, Swords, Brain, Flame, FastForward, CheckCircle2, ChevronRight, Activity, Smartphone } from 'lucide-react';
+import { Award, Target, Swords, Brain, Flame, FastForward, CheckCircle2, ChevronRight, Activity, Smartphone, BookOpen, Trophy, History } from 'lucide-react';
 import { LocalDbService } from '../db/localDb';
 import { getTelegramUser } from '../lib/telegramClient';
 
@@ -25,7 +25,9 @@ export const ProfilePage: React.FC<Props> = ({ currentUser, onNavigate }) => {
       alert('Telegram akkauntingiz muvaffaqiyatli ulandi!');
       window.location.reload();
     } else {
-      alert("Bu funksiya asosan Telegram Mini App ichida ishlaydi. Iltimos bot orqali kiring.");
+      const linkUrl = `https://t.me/TestONLINE_uzbot?start=link_${currentUser.id}`;
+      window.open(linkUrl, '_blank');
+      alert("Telegram botimizga yo'naltirildingiz! Botda 'Start' tugmasini bosing va hisobingiz platformaga avtomat bog'lanadi!");
     }
   };
 
@@ -85,56 +87,77 @@ export const ProfilePage: React.FC<Props> = ({ currentUser, onNavigate }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
          {/* Navigation Cards */}
-         <button onClick={() => onNavigate('statistics')} className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-premium transition-all text-left">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl flex items-center justify-center text-indigo-600 transition-transform group-hover:scale-110 group-hover:rotate-3">
-                 <Activity size={24} />
+         <button 
+           onClick={() => {
+             localStorage.setItem('dashboard_active_tab', 'subjects');
+             onNavigate('dashboard');
+           }} 
+           className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md hover:shadow-premium hover:border-blue-500/40 dark:hover:border-blue-500/40 transition-all text-left cursor-pointer duration-300"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-sm">
+                 <BookOpen size={28} />
                </div>
                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">Umumiy Statistika</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Barcha natijalaringiz tahlili</p>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Test Ishlash</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Barcha fanlar bo'yicha imtihon sinovlari</p>
                </div>
             </div>
-            <ChevronRight className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+            <ChevronRight className="text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
          </button>
 
-         <button onClick={() => onNavigate('achievements')} className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-premium transition-all text-left">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center text-amber-600 transition-transform group-hover:scale-110 group-hover:rotate-3">
-                 <Award size={24} />
+         <button 
+           onClick={() => onNavigate('duels')} 
+           className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md hover:shadow-premium hover:border-rose-500/40 dark:hover:border-rose-500/40 transition-all text-left cursor-pointer duration-300"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-sm">
+                 <Swords size={28} />
                </div>
                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">Yutuqlar</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Qo'lga kiritilgan medallar</p>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Bellashuvlar (Duel)</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Jonli do'stlar va raqiblar bilan bellashish</p>
                </div>
             </div>
-            <ChevronRight className="text-slate-400 group-hover:text-amber-600 transition-colors" />
+            <ChevronRight className="text-slate-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors" />
          </button>
          
-         <button onClick={() => onNavigate('duels')} className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-premium transition-all text-left">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 rounded-2xl flex items-center justify-center text-rose-600 transition-transform group-hover:scale-110 group-hover:rotate-3">
-                 <Swords size={24} />
+         <button 
+           onClick={() => {
+             localStorage.setItem('dashboard_active_tab', 'rankings');
+             onNavigate('dashboard');
+           }} 
+           className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md hover:shadow-premium hover:border-amber-500/40 dark:hover:border-amber-500/40 transition-all text-left cursor-pointer duration-300"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-sm">
+                 <Trophy size={28} />
                </div>
                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">Bellashuvlar</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Boshqa o'quvchilar bilan duel</p>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Reytinglar</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Barcha o'quvchilar peshqadamlik reytingi</p>
                </div>
             </div>
-            <ChevronRight className="text-slate-400 group-hover:text-rose-600 transition-colors" />
+            <ChevronRight className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
          </button>
 
-         <button onClick={() => onNavigate('mentor')} className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-premium transition-all text-left">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl flex items-center justify-center text-emerald-600 transition-transform group-hover:scale-110 group-hover:rotate-3">
-                 <Brain size={24} />
+         <button 
+           onClick={() => {
+             localStorage.setItem('dashboard_active_tab', 'history');
+             onNavigate('dashboard');
+           }} 
+           className="group flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md hover:shadow-premium hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all text-left cursor-pointer duration-300"
+         >
+            <div className="flex items-center gap-5">
+               <div className="w-14 h-14 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-sm">
+                 <History size={28} />
                </div>
                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white">AI Mentor</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Sun'iy intellekt tahlili</p>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Tarix va Tahlil</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Oldingi testlar natijalari tarixi</p>
                </div>
             </div>
-            <ChevronRight className="text-slate-400 group-hover:text-emerald-600 transition-colors" />
+            <ChevronRight className="text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
          </button>
       </div>
     </div>

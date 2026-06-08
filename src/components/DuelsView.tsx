@@ -19,6 +19,36 @@ export const DuelsView: React.FC<Props> = ({ currentUser, onNavigate }) => {
   const [error, setError] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [testType, setTestType] = useState<number>(20);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    if (!activeDuel) return;
+    const inviteUrl = `https://t.me/TestONLINE_uzbot?start=duel_${activeDuel.code}`;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(inviteUrl);
+      } else {
+        const tempInput = document.createElement('input');
+        tempInput.defaultValue = inviteUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (e) {
+      console.warn("Failed to copy", e);
+    }
+  };
+
+  const handleTgLink = () => {
+    if (!activeDuel) return;
+    const inviteUrl = `https://t.me/TestONLINE_uzbot?start=duel_${activeDuel.code}`;
+    const descText = `Men bilan ${activeDuel.subjectName} fanidan imtihon duelida kuch sinashing! ⚔️ Ushbu havolani bosing, srazi bot orqali ro'yxatdan o'ting va duelga qo'shiling:`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent(descText)}`;
+    window.open(shareUrl, '_blank');
+  };
 
   const subjects = LocalDbService.getSubjects();
 
@@ -32,6 +62,55 @@ export const DuelsView: React.FC<Props> = ({ currentUser, onNavigate }) => {
     });
     return () => unsub();
   }, [activeDuel?.id]);
+
+  // Auto-join if '?duel=CODE' is present in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('duel');
+    if (code && code.length === 6 && !activeDuel) {
+       setJoinCode(code);
+       // Clear the parameter from the browser URL so it doesn't loop
+       try {
+         const newUrl = window.location.pathname;
+         window.history.replaceState({}, document.title, newUrl);
+       } catch (e) {}
+       
+       // Trigger auto join
+       setLoading(true);
+       getDoc(doc(db, 'duels', code)).then(async (snap) => {
+          if (snap.exists()) {
+             const duel = snap.data() as Duel;
+             if (duel.status === 'waiting') {
+                const players = { ...duel.players };
+                if (!players[currentUser.id] && Object.keys(players).length < 2) {
+                   players[currentUser.id] = {
+                      userId: currentUser.id,
+                      fullName: currentUser.fullName,
+                      ready: false,
+                      score: 0,
+                      answersCount: 0,
+                      timeSpentSecs: 0,
+                      joinedAt: new Date().toISOString(),
+                      answers: {}
+                   };
+                   await updateDoc(doc(db, 'duels', code), { players });
+                   duel.players = players;
+                }
+                setActiveDuel(duel);
+             } else {
+                setError("Ushbu bellashuv allaqachon boshlangan yoki to'la.");
+             }
+          } else {
+             setError("Bellashuv topilmadi.");
+          }
+       }).catch((err) => {
+          console.error(err);
+          setError("Bellashuvga ulanishda xatolik.");
+       }).finally(() => {
+          setLoading(false);
+       });
+    }
+  }, [currentUser]);
 
   const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -243,8 +322,27 @@ export const DuelsView: React.FC<Props> = ({ currentUser, onNavigate }) => {
       ) : (
          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-xl mx-auto shadow-premium text-center">
              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Fan: {activeDuel.subjectName}</p>
-             <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-widest my-4">{activeDuel.code}</h2>
-             <p className="text-sm font-medium text-slate-500 mb-8">Ushbu kodni raqibingizga yuboring</p>
+             <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-widest my-3">{activeDuel.code}</h2>
+             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4">Ushbu kodni yoki quyidagi taklifnoma havolasini raqibingizga yuboring</p>
+             
+             {/* Telegram share quick links */}
+             <div className="mb-6 p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 rounded-2xl flex flex-col gap-3">
+                <p className="text-[11px] font-bold text-blue-800 dark:text-blue-400 text-left">💬 Do'stlarni Telegram orqali duelga chaqirish</p>
+                <div className="flex gap-2.5">
+                   <button 
+                     onClick={handleTgLink}
+                     className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                   >
+                     🚀 Telegramda Ulashish
+                   </button>
+                   <button 
+                     onClick={handleCopyLink}
+                     className={`flex-1 py-2 px-3 text-xs font-extrabold rounded-xl transition shadow-sm border flex items-center justify-center gap-1.5 cursor-pointer ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30 dark:text-emerald-400' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700'}`}
+                   >
+                     {copied ? '✅ Havola nusxalandi' : '🔗 Havolani ko\'chirish'}
+                   </button>
+                </div>
+             </div>
              
              <div className="grid grid-cols-2 gap-4 mb-8">
                  {Object.values(activeDuel.players).map(p => (
