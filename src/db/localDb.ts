@@ -16,7 +16,7 @@ import {
 } from '../types';
 
 import { db } from './firebase';
-import { doc, setDoc, deleteDoc, collection, onSnapshot, getDocs } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, onSnapshot, getDocs, getDoc } from 'firebase/firestore';
 
 
 // Seed initial subjects
@@ -663,9 +663,10 @@ export class LocalDbService {
     (window as any).__firebaseSynced = true;
 
     try {
-      // Check if DB is empty to seed initial mock values
-      const subjectsSnapshot = await getDocs(collection(db, 'subjects'));
-      if (subjectsSnapshot.empty) {
+      // Check if DB has been seeded already
+      const configDocRef = doc(db, 'config', 'setup');
+      const configSnap = await getDoc(configDocRef);
+      if (!configSnap.exists()) {
         console.log("Firestore is empty, seeding with initial local data...");
         const payload = this.getPayload();
         
@@ -684,6 +685,9 @@ export class LocalDbService {
         await pushBatch(payload.otp_notifications, 'notifications');
         await pushBatch(payload.otp_activity_logs, 'activity_logs');
         await setDoc(doc(db, 'config', 'telegram'), payload.otp_telegram_config);
+
+        // Mark database as seeded config
+        await setDoc(configDocRef, { seeded: true, createdAt: new Date().toISOString() });
       }
     } catch (e) {
       console.warn("Failed to seed Firebase initial data:", e);
@@ -1205,5 +1209,43 @@ export class LocalDbService {
     }
 
     return { imported, duplicates, errors };
+  }
+
+  static async clearDemoData(): Promise<void> {
+    const demoProfiles = ['usr-1', 'usr-2', 'usr-3', 'usr-4', 'usr-5', 'usr-6', 'usr-7', 'usr-8'];
+    const demoSubjects = ['subj-1', 'subj-2', 'subj-3', 'subj-4'];
+    const demoRankings = ['rk-1', 'rk-2', 'rk-3', 'rk-4', 'rk-5', 'rk-6', 'rk-7', 'rk-8', 'rk-9', 'rk-10', 'rk-11', 'rk-12', 'rk-13', 'rk-14'];
+    const demoNotifs = ['notif-1', 'notif-2', 'notif-3'];
+    const demoLogs = ['log-1', 'log-2', 'log-3'];
+
+    // Delete demo profiles
+    for (const id of demoProfiles) {
+      await deleteDoc(doc(db, 'profiles', id)).catch(e => console.warn(e));
+    }
+    // Delete demo subjects
+    for (const id of demoSubjects) {
+      await deleteDoc(doc(db, 'subjects', id)).catch(e => console.warn(e));
+    }
+    // Delete demo rankings
+    for (const id of demoRankings) {
+      await deleteDoc(doc(db, 'rankings', id)).catch(e => console.warn(e));
+    }
+    // Delete demo notifications
+    for (const id of demoNotifs) {
+      await deleteDoc(doc(db, 'notifications', id)).catch(e => console.warn(e));
+    }
+    // Delete demo logs
+    for (const id of demoLogs) {
+      await deleteDoc(doc(db, 'activity_logs', id)).catch(e => console.warn(e));
+    }
+
+    // Now delete all questions associated with demo subjects or starting with 'q-i-'
+    const questions = this.getQuestions();
+    const demoQuestions = questions.filter(q => demoSubjects.includes(q.subjectId) || q.id.startsWith('q-i-'));
+    for (const q of demoQuestions) {
+      await deleteDoc(doc(db, 'questions', q.id)).catch(e => console.warn(e));
+    }
+
+    console.log("Demo data successfully deleted from Firebase Firestore.");
   }
 }

@@ -478,6 +478,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
                   ))}
                 </div>
               </div>
+
+              {/* Database Clean / Maintenance Section */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-premium text-left relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-red-500/5 rounded-full filter blur-2xl"></div>
+                
+                <h3 className="font-bold text-sm text-red-650 dark:text-red-400 font-sans tracking-tight flex items-center gap-2">
+                  ⚠️ TIZIM DE-MO MA'LUMOTLARINI TOZALASH
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xl leading-relaxed">
+                  Tizimdagi barcha demo foydalanuvchilar, demo fanlar, demo savollar, dummy haftalik reytinglar va tizim jurnallarini butunlay o'chirib yuboradi. Siz o'zingiz qo'shgan yoki import qilgan ma'lumotlaringiz (foydalanuvchilar, fanlar va savollar) saqlanib qolinadi.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={async () => {
+                      if (confirm("Diqqat! Barcha demo ma'lumotlarni (demo fanlar, demo savollar, kiritilgan loglar va test natijalarini) butunlay o'chirib yubormoqchimisiz?\n\nBu amalni qaytarib bo'lmaydi!")) {
+                        try {
+                          await LocalDbService.clearDemoData();
+                          loadData();
+                          alert("Muvaffaqiyatli: Barcha demo ma'lumotlar Firestore va mahalliy xotiradan muvaffaqiyatli o'chirildi!");
+                        } catch (err: any) {
+                          alert("Xatolik yuz berdi: " + err.message);
+                        }
+                      }
+                    }}
+                    className="bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 font-extrabold text-[11px] px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 border border-red-200/50 dark:border-red-950/50 active:scale-95"
+                  >
+                    🗑️ Demo Ma'lumotlarni Butunlay O'chirish
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
