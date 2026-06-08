@@ -17,6 +17,7 @@ export interface Profile {
   role?: 'admin' | 'moderator' | 'user';
   telegramId?: string;
   telegramUsername?: string;
+  avatar?: string; // Profile picture as base64 string or url
 }
 
 export interface Subject {

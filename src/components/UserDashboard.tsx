@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, Calculator, Compass, Languages, Award, Clock, ArrowRight, CheckCircle, 
-  XCircle, BarChart3, TrendingUp, Sparkles, ChevronRight, Bell, Trophy, BookMarked, ShieldAlert, History
+  XCircle, BarChart3, TrendingUp, Sparkles, ChevronRight, Bell, Trophy, BookMarked, ShieldAlert, History, Swords
 } from 'lucide-react';
 import { Subject, Profile, TestResult, Ranking, DBNotification } from '../types';
 import { LocalDbService } from '../db/localDb';
@@ -18,6 +18,7 @@ interface UserDashboardProps {
   profile: Profile;
   onStartExam: (subjectId: string, testType: 20 | 30 | 50 | 100) => void;
   onLogOut: () => void;
+  onNavigate?: (view: string) => void;
   onAdminNavigation?: () => void;
 }
 
@@ -25,12 +26,41 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   profile,
   onStartExam,
   onLogOut,
+  onNavigate,
   onAdminNavigation
 }) => {
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem('dashboard_active_tab') || 'subjects';
     return saved === 'notifications' ? 'subjects' : saved;
   });
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatDateUz = (date: Date) => {
+    const months = [
+      'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+      'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
+    ];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    const days = [
+      'Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'
+    ];
+    const dayOfWeek = days[date.getDay()];
+    return `${dayOfWeek}, ${day}-${month}, ${year}-yil`;
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [results, setResults] = useState<TestResult[]>([]);
   const [notifications, setNotifications] = useState<DBNotification[]>([]);
@@ -183,573 +213,145 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto py-4 px-4 text-left" id="user-dashboard-view">
+    <div className="w-full max-w-7xl mx-auto py-4 px-4 text-left space-y-8 animate-in fade-in duration-300" id="user-dashboard-view">
       
-      {/* Grid Dashboard structure with Sidebar summary stats and Main Workspace Tabs */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      {/* Premium Greetings & Real-time Info Header */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-premium relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-6 transition-all duration-300">
+        {/* Abstract organic ambient background highlights */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full filter blur-3xl -translate-y-12 translate-x-12 shrink-0"></div>
+        <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full filter blur-2xl shrink-0"></div>
         
-        {/* Left-hand summary columns: Quick scores & analytics */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-premium space-y-5">
-            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-3">Statistika</h3>
-            
-            <div className="grid grid-cols-3 sm:grid-cols-1 gap-4">
-              {/* Box 1 */}
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-500/15 rounded-2xl">
-                <p className="text-xs font-semibold text-slate-500 tracking-wide">Imtihonlar</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white font-display tracking-tighter mt-1">{totalCompleted} ta</p>
-              </div>
-
-              {/* Box 2 */}
-              <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/15 rounded-2xl">
-                <p className="text-xs font-semibold text-slate-500 tracking-wide">Eng yaxshi natija</p>
-                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-display tracking-tighter mt-1">{bestScore}%</p>
-              </div>
-
-              {/* Box 3 */}
-              <div className="p-3 bg-orange-50/50 dark:bg-orange-950/20 border border-orange-500/15 rounded-2xl">
-                <p className="text-xs font-semibold text-slate-500 tracking-wide">O'rtacha ball</p>
-                <p className="text-2xl font-black text-orange-600 dark:text-orange-400 font-display tracking-tighter mt-1">{avgScore}%</p>
-              </div>
-            </div>
+        <div className="relative space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full font-sans">
+              Online tizim faol
+            </span>
           </div>
-
-          {/* Quick Support Badge */}
-          <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-premium relative overflow-hidden flex flex-col gap-3">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500 to-transparent rounded-full filter blur-xl opacity-30"></div>
-            <Award className="text-blue-500" size={28} />
-            <div>
-              <h4 className="font-bold text-sm text-slate-100">Mr. Kholdorov</h4>
-              <p className="text-xs text-slate-400 mt-1">A’lo natijalar uchun sertifikat kodi beriladi hamda rasmiy tarzda g'oliblarga taqdim etiladi.</p>
-            </div>
-            <a href="https://t.me/MrKholdorov" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-blue-400 flex items-center gap-1 hover:underline">
-              Batafsil ma'lumot <ArrowRight size={14} />
-            </a>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            Assalamu alaykum, <span className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">{profile.fullName}</span> 👋
+          </h1>
+          <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+            Platforma orqali o'z bilimlaringizni sinang, raqiblar bilan bellashing va yuqori cho'qqilarni zabt eting!
+          </p>
         </div>
 
-        {/* Right Dashboard Workspace Panel */}
-        <div className="lg:col-span-3 space-y-6">
-          
-          {/* Main Selectors */}
-          <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 h-11 overflow-x-auto whitespace-nowrap">
-            {[
-              { id: 'subjects', label: '📚 Fanlar', icon: BookOpen },
-              { id: 'analytics', label: '📊 Tahlillar', icon: BarChart3 },
-              { id: 'history', label: '📜 Tarix', icon: History },
-              { id: 'rankings', label: '🏆 Peshqadamlar', icon: Trophy }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  localStorage.setItem('dashboard_active_tab', tab.id);
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-sans tracking-tight text-[13px] font-semibold transition duration-150 cursor-pointer ${activeTab === tab.id ? 'bg-[#0F172A] text-white dark:bg-slate-850' : 'text-slate-500 hover:bg-slate-150/50 dark:hover:bg-slate-800'}`}
-              >
-                <span>{tab.label}</span>
-              </button>
-            ))}
+        {/* Real-time elegant tracking Clock - Borderless & Clean */}
+        <div className="relative shrink-0 flex items-center gap-3.5 select-none self-start md:self-auto py-1">
+          <Clock size={20} className="text-indigo-500 dark:text-indigo-400 shrink-0 animate-pulse" />
+          <div className="text-left font-sans">
+            <p className="text-[15px] font-black text-slate-850 dark:text-slate-100 leading-none tracking-tight font-mono">{formatTime(currentTime)}</p>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5">{formatDateUz(currentTime)}</p>
           </div>
-
-          {/* TAB: Subjects lists */}
-          {activeTab === 'subjects' && (
-            <div className="space-y-6">
-              {/* Premium Mixed Subject Featured Section */}
-              <div 
-                onClick={() => {
-                  const virtualMixedSubject = {
-                    id: 'mixed',
-                    name: "Aralash Savollar (Barcha fanlar)",
-                    icon: 'Sparkles',
-                    description: "Matematika, Ona tili va adabiyot, Ingliz tili va Tarix fanlarining barcha savollarini o'zi ichiga olgan aralash test rejimi.",
-                    totalQuestions: LocalDbService.getQuestions().length,
-                    progress: results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
-                      ? Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore)) 
-                      : 0
-                  };
-                  setActiveSubjectForExam(virtualMixedSubject);
-                }}
-                className="relative overflow-hidden bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white rounded-3xl p-6 shadow-premium cursor-pointer group hover:shadow-glow transition-all duration-300"
-              >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full filter blur-3xl transform translate-x-12 -translate-y-12 shrink-0 group-hover:scale-110 transition duration-300"></div>
-                <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="space-y-2 max-w-xl text-left">
-                    <span className="inline-flex items-center gap-1.5 bg-white/10 text-blue-200 text-[10px] font-black px-2.5 py-0.5 rounded-full backdrop-blur-md uppercase tracking-wider">
-                      <Sparkles size={10} className="animate-spin text-amber-300" /> SUPER INOVATSIYA
-                    </span>
-                    <h3 className="font-extrabold text-xl sm:text-2xl tracking-tight leading-none text-slate-100">
-                      Barcha fanlardan aralash imtihon topshirish
-                    </h3>
-                    <p className="text-xs text-blue-100/90 leading-relaxed">
-                      Matematika, Ona tili va adabiyot, Ingliz tili va Tarix fanlarining barcha savollaridan tuzilgan universal test sinovi. Haqiqiy bilimingizni umumiy imtihon reytingida sinab ko'ring!
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col items-start md:items-end shrink-0 gap-1.5">
-                    <span className="text-xs text-blue-200/80 font-medium">Umumiy savollar</span>
-                    <span className="text-2xl font-black font-display tracking-tight text-white bg-white/10 px-4 py-1.5 rounded-xl backdrop-blur-md">
-                      {LocalDbService.getQuestions().length} ta bazada
-                    </span>
-                  </div>
-                </div>
-
-                <div className="relative mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-100 font-medium">
-                  <p>
-                    O'rtacha natijangiz: <span className="font-bold underline text-white font-sans tracking-tight">
-                      {results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
-                        ? `${Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore))}%` 
-                        : "Hali topshirilmagan"}
-                    </span>
-                  </p>
-                  <span className="inline-flex items-center gap-1 font-bold text-white group-hover:translate-x-1 transition duration-155">
-                    Imtihonni Tanlash va Boshlash <ArrowRight size={14} />
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {subjects.map((sub) => (
-                  <div
-                    key={sub.id}
-                    onClick={() => setActiveSubjectForExam(sub)}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:border-blue-500/40 dark:hover:border-blue-500/45 transition shadow-premium cursor-pointer group flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* Icon & title */}
-                      <div className="flex items-center justify-between gap-3 mb-4">
-                        <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition shrink-0">
-                          <DynamicIcon name={sub.icon} size={20} />
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] font-sans tracking-tight text-slate-400 font-bold uppercase">Savollar soni</span>
-                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans tracking-tight">{sub.totalQuestions} ta</span>
-                        </div>
-                      </div>
-
-                      <h3 className="font-bold text-base text-slate-950 dark:text-white leading-tight group-hover:text-blue-600 transition">
-                        {sub.name}
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 lines-2 leading-relaxed">
-                        {sub.description}
-                      </p>
-                    </div>
-
-                    {/* Progress representation */}
-                    <div className="mt-5 pt-4 border-t border-slate-50 dark:border-slate-800 space-y-2">
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400">Oxirgi natijangiz: <span className="font-bold text-slate-600 dark:text-slate-300">{sub.lastScore ? `${sub.lastScore}%` : 'Hali topshirilmagan'}</span></span>
-                        <span className="font-bold text-blue-600 dark:text-blue-400">Eng yuqori: {sub.progress}%</span>
-                      </div>
-                      <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600" style={{ width: `${sub.progress}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: History */}
-          {activeTab === 'history' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
-                <div className="flex items-center gap-3 mb-6">
-                  <History className="text-blue-500" size={24} />
-                  <div>
-                    <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200 font-display">Tarix</h3>
-                    <p className="text-xs text-slate-500 font-sans tracking-tight mt-1">Sizning barcha oldingi imtihon natijalaringiz.</p>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  {results.length === 0 ? (
-                    <div className="py-12 text-center text-slate-400 font-sans tracking-tight text-sm">
-                      <History className="mx-auto h-12 w-12 text-slate-200 dark:text-slate-800 mb-3" />
-                      Siz hali hech qanday test ishlamagansiz.
-                    </div>
-                  ) : (
-                    <table className="w-full text-left font-sans tracking-tight text-xs">
-                      <thead className="bg-[#F8FAFC] dark:bg-slate-850/50 text-slate-500 dark:text-slate-400">
-                        <tr>
-                          <th className="px-4 py-3 rounded-l-lg font-semibold uppercase">Sana</th>
-                          <th className="px-4 py-3 font-semibold uppercase">Fan Nomi</th>
-                          <th className="px-4 py-3 font-semibold uppercase text-center">Test turi</th>
-                          <th className="px-4 py-3 font-semibold uppercase text-center">To'g'ri</th>
-                          <th className="px-4 py-3 font-semibold uppercase text-center">Xato</th>
-                          <th className="px-4 py-3 font-semibold uppercase text-center">Foiz %</th>
-                          <th className="px-4 py-3 rounded-r-lg font-semibold uppercase text-center">Vaqt</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                        {[...results].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(result => (
-                          <tr key={result.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                            <td className="px-4 py-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">
-                              {new Date(result.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </td>
-                            <td className="px-4 py-3.5 font-bold text-slate-800 dark:text-slate-200">
-                              {result.subjectName}
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-slate-600 dark:text-slate-300">
-                              {result.testType} ta
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-emerald-600 bg-emerald-50/50 dark:bg-transparent">
-                              {result.correctAnswers}
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-red-600 bg-red-50/50 dark:bg-transparent">
-                              {result.wrongAnswers}
-                            </td>
-                            <td className="px-4 py-3.5 text-center">
-                              <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md font-bold ${result.percentageScore >= 60 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                {result.percentageScore}%
-                              </span>
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-slate-500 dark:text-slate-400">
-                              {result.completionTimeFormatted}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: Analytical records overview */}
-          {activeTab === 'analytics' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 font-sans tracking-tight">📈 % KO'RSATKICHLAR DINAMIKASI (Diagramma)</h3>
-                {renderSVGLineChart()}
-              </div>
-
-              {/* Recent test results list */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium text-left">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-50 dark:border-slate-800 pb-3 font-sans tracking-tight">📋 YAQINDA TOPSHIRILGAN IMTIHON NATIJALARI</h3>
-                
-                {results.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-6">Hech qanday natija saqlanmagan...</p>
-                ) : (
-                  <div className="space-y-3">
-                    {results.map((r) => (
-                      <div 
-                        key={r.id} 
-                        className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-850 rounded-xl"
-                      >
-                        <div className="flex gap-3 items-center">
-                          {r.percentageScore >= 60 ? (
-                            <CheckCircle className="text-emerald-500 shrink-0" size={24} />
-                          ) : (
-                            <XCircle className="text-red-500 shrink-0" size={24} />
-                          )}
-                          <div>
-                            <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{r.subjectName}</h4>
-                            <p className="text-[10px] text-slate-400 mt-0.5">
-                              Sana: {new Date(r.createdAt).toLocaleDateString()} | Vaqt sarfi: {r.completionTimeFormatted} | Turi: {r.testType} talik
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Right side scores */}
-                        <div className="flex items-center gap-4 justify-between sm:justify-end">
-                          <div className="text-right">
-                            <p className="text-xs text-slate-400 font-bold uppercase">To'g'ri / Noto'g'ri</p>
-                            <p className="text-xs font-sans tracking-tight font-bold text-slate-700 dark:text-slate-300 mt-0.5">
-                              {r.correctAnswers} / {r.wrongAnswers}
-                            </p>
-                          </div>
-                          
-                          <div className="text-right">
-                            <span className={`text-lg font-black font-sans tracking-tight ${r.percentageScore >= 60 ? 'text-emerald-500' : 'text-red-500'}`}>
-                              {r.percentageScore}%
-                            </span>
-                          </div>
-
-                          {/* Request certificate if passing score */}
-                          {r.percentageScore >= 60 ? (
-                            <button
-                              onClick={() => setReviewedCertificate(r)}
-                              className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 p-2 rounded-xl transition duration-150 cursor-pointer text-center"
-                            >
-                              Sertifikat
-                            </button>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 italic font-sans tracking-tight px-2">Yetersiz ball</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: Leaderboards and Rank Columns */}
-          {activeTab === 'rankings' && (
-            <div className="space-y-6">
-              
-              {/* Type Category selection */}
-              <div className="flex flex-wrap gap-2 items-center justify-between border-b border-indigo-100 dark:border-slate-800 pb-3">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans tracking-tight">Imtihon turi bo'yicha filter:</span>
-                <div className="flex gap-1">
-                  {([20, 30, 50, 100] as const).map((length) => (
-                    <button
-                      key={length}
-                      onClick={() => setLeaderboardType(length)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-sans tracking-tight font-bold border transition duration-150 cursor-pointer ${leaderboardType === length ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800'}`}
-                    >
-                      {length} talik test
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dynamic physical top columns podium rendering */}
-              <LeaderboardPodium top3={leaderboardList.slice(0, 3)} />
-
-              {/* Full listings tables */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 font-sans tracking-tight">👥 TOP 100 LISTING (Barcha o'quvchilar ko'rsatkichi)</h3>
-                
-                {leaderboardList.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-6">Kategoriya bo'yicha imtihon topshiriqlari yo'q...</p>
-                ) : (
-                  <div className="space-y-1 overflow-x-auto min-w-full">
-                    {leaderboardList.map((rank, index) => {
-                      const isTop3 = index < 3;
-                      return (
-                        <div 
-                          key={rank.id} 
-                          className={`flex items-center justify-between gap-4 p-3 rounded-xl border font-sans tracking-tight text-xs ${isTop3 ? 'bg-amber-500/5 border-amber-500/10' : 'bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800'} hover:shadow-premium transition`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${index === 0 ? 'bg-amber-400 text-slate-9a0 flex font-extrabold' : index === 1 ? 'bg-slate-300 text-slate-900' : index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800'}`}>
-                              {index + 1}
-                            </span>
-                            <div>
-                              <p className="font-bold text-slate-900 dark:text-white">{rank.fullName}</p>
-                              <p className="text-[10px] text-slate-400">{rank.subjectName}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="text-[9px] text-slate-400 font-bold uppercase">To'g'ri/Jami</p>
-                              <p className="font-bold text-slate-600 dark:text-slate-300">{rank.score} / {rank.testType}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[9px] text-slate-400 font-bold uppercase">Vaqt</p>
-                              <p className="font-bold text-slate-600 dark:text-slate-300">{rank.completionTimeFormatted}</p>
-                            </div>
-                            <div className="text-right min-w-[50px]">
-                              <span className="font-extrabold text-blue-600 dark:text-blue-400">{rank.percentage}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-            </div>
-          )}
-
-          {/* TAB: Notifications */}
-          {activeTab === 'notifications' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-indigo-100 dark:border-slate-850 pb-3">
-                <span className="text-xs text-slate-500 font-bold font-sans tracking-tight">Barcha bildirishnomalar ({notifications.length} ta)</span>
-                <button
-                  onClick={handleMarkNotifsRead}
-                  className="text-xs font-bold text-blue-600 hover:underline"
-                >
-                  Hammasini o'qildi deb belgilash
-                </button>
-              </div>
-
-              {notifications.length === 0 ? (
-                <div className="p-10 text-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400">
-                  Bildirishnomalar mavjud emas.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {notifications.map((n) => {
-                    let borderTheme = "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900";
-                    if (!n.isRead) {
-                      borderTheme = "border-blue-200 bg-blue-50/20 dark:bg-blue-950/20 dark:border-blue-900/60 font-medium";
-                    }
-                    return (
-                      <div 
-                        key={n.id} 
-                        onClick={() => handleNotificationClick(n)}
-                        className={`p-4 border rounded-xl text-left transition duration-150 cursor-pointer hover:shadow-premium hover:-translate-y-[1px] active:scale-[0.99] select-none ${borderTheme}`}
-                      >
-                        <div className="flex justify-between items-start gap-4">
-                          <div>
-                            <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                              {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0" />}
-                              {n.title}
-                            </h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
-                              {n.message}
-                            </p>
-                          </div>
-                          <span className="text-[10px] text-slate-400 shrink-0 font-sans tracking-tight">
-                            {new Date(n.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
         </div>
-
       </div>
 
-      {/* MODAL Popup for Subject Exam length Selection */}
-      {activeSubjectForExam && (
-        <div className="fixed inset-0 z-50 bg-[#000000]/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-premium text-left animate-scale-up space-y-6">
-            
-            {/* Header */}
-            <div>
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                <DynamicIcon name={activeSubjectForExam.icon} size={24} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                {activeSubjectForExam.name}
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">Imtihonga mos savollar sonini tanlang:</p>
+      {/* Modern Premium Navigation Modules Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Module 1: Test Ishlash */}
+        <button 
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('subjects');
+            }
+          }}
+          className="group relative text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-blue-500/50 dark:hover:border-blue-400/50 hover:shadow-premium transition-all duration-300 shadow-sm cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom duration-300"
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full filter blur-xl group-hover:scale-150 transition duration-300"></div>
+          <div className="flex items-start justify-between gap-3 relative">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <BookOpen size={24} />
             </div>
-
-            {/* Slider/Radio Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              {[20, 30, 50, 100].map((length) => (
-                <button
-                  key={length}
-                  onClick={() => setSelectedExamType(length as any)}
-                  className={`p-3 rounded-2xl border text-center transition duration-150 cursor-pointer ${selectedExamType === length ? 'bg-blue-50 text-blue-600 border-blue-500 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900 ring-4 ring-blue-500/10' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100'}`}
-                >
-                  <p className="text-lg font-black font-sans tracking-tight leading-none">{length}</p>
-                  <p className="text-[10px] font-bold uppercase mt-1">Savolli test</p>
-                  <p className="text-[9px] font-sans tracking-tight whitespace-nowrap text-slate-400">{length} daqiqa vaqt</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Warning notes */}
-            <div className="flex gap-2 items-start bg-slate-50 dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 text-slate-500">
-              <ShieldAlert size={16} className="text-slate-400 shrink-0 mt-0.5" />
-              <p className="text-[10px] leading-relaxed">
-                Tizimda har bir savol uchun 1 daqiqa vaqt ajratiladi. Imtihon boshlagach orqaga qaytib bo'lmaydi. Savollar tasodifiy tushadi.
-              </p>
-            </div>
-
-            {/* Action controls */}
-            <div className="flex gap-3 justify-end pt-2">
-              <button
-                onClick={() => setActiveSubjectForExam(null)}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
-              >
-                Yopish
-              </button>
-              <button
-                onClick={() => {
-                  const subId = activeSubjectForExam.id;
-                  setActiveSubjectForExam(null);
-                  onStartExam(subId, selectedExamType);
-                }}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition active:scale-95 shadow-glow cursor-pointer"
-              >
-                Imtihonni boshlash
-              </button>
-            </div>
-
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider font-mono">Imtihon</span>
           </div>
-        </div>
-      )}
-
-      {/* MODAL Popup for Certificate viewer */}
-      {reviewedCertificate && (
-        <div className="fixed inset-0 z-50 bg-[#000000]/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl my-8">
-            {/* Close button on modal header wrapper */}
-            <button
-              onClick={() => setReviewedCertificate(null)}
-              className="absolute -top-12 right-0 bg-[#0F172A] hover:bg-slate-800 text-white p-2.5 rounded-xl shadow-premium cursor-pointer"
-            >
-              Yopish (X)
-            </button>
-            
-            <Certificate
-              fullName={profile.fullName}
-              subjectName={reviewedCertificate.subjectName}
-              percentage={reviewedCertificate.percentageScore}
-              testType={reviewedCertificate.testType}
-              date={new Date(reviewedCertificate.createdAt).toLocaleDateString()}
-              certificateNumber={reviewedCertificate.id.toUpperCase().replace('RES-', 'CERT-').substring(0, 14)}
-            />
+          <div className="mt-4 relative">
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">Test Ishlash</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal font-medium">Barcha o'quv fanlari bo'yicha imtihon sinovlari topshirish.</p>
           </div>
-        </div>
-      )}
-
-      {/* MODAL Popup for Notification Detail viewer */}
-      {selectedNotification && (
-        <div className="fixed inset-0 z-50 bg-[#000000]/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-premium text-left animate-scale-up space-y-4">
-            
-            {/* Header / Type badging */}
-            <div className="flex justify-between items-center">
-              <span className={`text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full ${
-                selectedNotification.type === 'warning' 
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' 
-                  : selectedNotification.type === 'success'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                  : selectedNotification.type === 'info'
-                  ? 'bg-[#E0F2FE] text-[#0369A1] dark:bg-blue-950/40 dark:text-blue-400'
-                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-350'
-              }`}>
-                {selectedNotification.type || 'tizim'} Xabari
-              </span>
-              <span className="text-[10px] text-slate-400 font-sans tracking-tight">
-                {new Date(selectedNotification.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-
-            {/* Title */}
-            <div>
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
-                {selectedNotification.title}
-              </h3>
-            </div>
-
-            {/* Message Body */}
-            <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed font-sans border-t border-slate-100 dark:border-slate-900 pt-3">
-              {selectedNotification.message}
-            </p>
-
-            {/* Close Button */}
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setSelectedNotification(null)}
-                className="px-5 py-2 bg-[#0F172A] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition duration-150 active:scale-95 cursor-pointer"
-              >
-                Tushunarli
-              </button>
-            </div>
-
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-bold">
+            <span>Fanlarni tanlash</span>
+            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </div>
-        </div>
-      )}
+        </button>
+
+        {/* Module 2: Bellashuvlar */}
+        <button 
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('duels');
+            }
+          }}
+          className="group relative text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-rose-500/50 dark:hover:border-rose-400/50 hover:shadow-premium transition-all duration-300 shadow-sm cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom duration-300 delay-100"
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/5 rounded-full filter blur-xl group-hover:scale-150 transition duration-300"></div>
+          <div className="flex items-start justify-between gap-3 relative">
+            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <Swords size={24} />
+            </div>
+            <span className="text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider font-mono">Live Duel</span>
+          </div>
+          <div className="mt-4 relative">
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">Bellashuvlar (Duel)</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal font-medium">Jonli ravishda do'stlar va raqiblar bilan onlayn bellashish.</p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-rose-600 dark:text-rose-400 font-bold">
+            <span>Musobaqaga kirish</span>
+            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+
+        {/* Module 3: Reytinglar */}
+        <button 
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('rankings');
+            }
+          }}
+          className="group relative text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-amber-500/50 dark:hover:border-amber-400/50 hover:shadow-premium transition-all duration-300 shadow-sm cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom duration-300 delay-200"
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full filter blur-xl group-hover:scale-150 transition duration-300"></div>
+          <div className="flex items-start justify-between gap-3 relative">
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <Trophy size={24} />
+            </div>
+            <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider font-mono">Reyting</span>
+          </div>
+          <div className="mt-4 relative">
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">Reytinglar</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal font-medium">Barcha foydalanuvchilar orasida yetakchilik reytingini o'rganish.</p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 font-bold">
+            <span>Peshqadamlar</span>
+            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+
+        {/* Module 4: Tarix va tahlil */}
+        <button 
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate('history');
+            }
+          }}
+          className="group relative text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:border-emerald-500/50 dark:hover:border-emerald-400/50 hover:shadow-premium transition-all duration-300 shadow-sm cursor-pointer overflow-hidden animate-in fade-in slide-in-from-bottom duration-300 delay-300"
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full filter blur-xl group-hover:scale-150 transition duration-300"></div>
+          <div className="flex items-start justify-between gap-3 relative">
+            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <History size={24} />
+            </div>
+            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider font-mono">Tarix</span>
+          </div>
+          <div className="mt-4 relative">
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">Tarix va Tahlil</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal font-medium">Barcha topshirilgan sinovlar natijasi va ularning tahlili.</p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+            <span>Arxiv va tahlillar</span>
+            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+      </div>
 
     </div>
   );

@@ -53,12 +53,16 @@ export const UserProfileDropdown: React.FC<Props> = ({ currentUser, theme, onTog
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 group transition-all"
+        className="flex items-center gap-2 group transition-all text-left"
       >
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
-           <span className="text-sm font-bold text-blue-700 dark:text-blue-300 tracking-tight">
-             {getInitials(currentUser.fullName)}
-           </span>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 shrink-0">
+          {currentUser.avatar ? (
+            <img src={currentUser.avatar} alt={currentUser.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            <span className="text-sm font-bold text-blue-700 dark:text-blue-300 tracking-tight">
+              {getInitials(currentUser.fullName)}
+            </span>
+          )}
         </div>
         <div className="hidden md:block text-left">
           <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{currentUser.fullName.split(' ')[0]}</p>
@@ -68,13 +72,17 @@ export const UserProfileDropdown: React.FC<Props> = ({ currentUser, theme, onTog
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-premium z-50 overflow-hidden transform origin-top-right transition-all animate-in fade-in zoom-in duration-200">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20">
-             <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{currentUser.fullName}</p>
-             <p className="text-xs text-slate-500 truncate mt-0.5">{currentUser.email}</p>
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20 flex items-center gap-3">
+            {currentUser.avatar && (
+              <img src={currentUser.avatar} alt={currentUser.fullName} className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+            )}
+            <div className="overflow-hidden">
+               <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{currentUser.fullName}</p>
+               <p className="text-xs text-slate-500 truncate mt-0.5">{currentUser.email}</p>
+            </div>
           </div>
 
           <div className="py-1">
-            <MenuItem icon={User} label="Profil" onClick={() => onNavigate('profile')} />
             {isAdmin && (
               <MenuItem icon={Settings} label="Admin Panel" onClick={() => onNavigate('admin')} color="text-indigo-600 dark:text-indigo-400 font-bold" />
             )}

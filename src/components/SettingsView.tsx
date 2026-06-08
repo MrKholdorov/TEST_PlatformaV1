@@ -4,7 +4,8 @@ import { LocalDbService } from '../db/localDb';
 import { 
   User, Mail, Phone, Lock, Eye, EyeOff, Save, RefreshCw, 
   Trash2, Bell, Sparkles, Smartphone, ShieldCheck, Sun, Moon, 
-  Info, AlertTriangle, CheckCircle, ChevronRight, Settings, Languages
+  Info, AlertTriangle, CheckCircle, ChevronRight, Settings, Languages,
+  Camera, Upload
 } from 'lucide-react';
 import { getTelegramUser } from '../lib/telegramClient';
 
@@ -32,6 +33,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [email, setEmail] = useState(currentUser.email || '');
   const [phone, setPhone] = useState(currentUser.phone || '');
   const [login, setLogin] = useState(currentUser.login || '');
+  const [avatar, setAvatar] = useState(currentUser.avatar || '');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg("Iltimos, faqat rasm fayllarini yuklang.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setAvatar(dataUrl);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
   
   // Security/Password state
   const [showPassword, setShowPassword] = useState(false);
@@ -85,7 +132,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       fullName: fullName.trim(),
       email: email.trim(),
       phone: phone.trim(),
-      login: login.trim()
+      login: login.trim(),
+      avatar: avatar || undefined
     };
 
     try {
@@ -336,7 +384,94 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <p className="text-[10px] text-slate-500 mt-0.5">Tizimda ko'rinadigan shaxsiy ma'lumotlar va login parametrlari</p>
               </div>
 
-              <form onSubmit={handleSaveAccount} className="space-y-4">
+              <form onSubmit={handleSaveAccount} className="space-y-6">
+                {/* Profile Picture Upload Section */}
+                <div className="flex flex-col sm:flex-row items-center gap-6 p-5 bg-slate-50/50 dark:bg-slate-800/10 border border-slate-100 dark:border-slate-800/60 rounded-2xl">
+                  {/* Current Image / Preview */}
+                  <div className="relative group shrink-0">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-inner flex items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-slate-800 dark:to-slate-700">
+                      {avatar ? (
+                        <img 
+                          src={avatar} 
+                          alt="Avatar" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <span className="text-3xl font-black text-indigo-700 dark:text-slate-300">
+                          {fullName ? fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+                        </span>
+                      )}
+                    </div>
+                    {/* Hover upload trigger */}
+                    <label 
+                      htmlFor="avatar-file-input" 
+                      className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition duration-150 rounded-full flex flex-col items-center justify-center text-white cursor-pointer"
+                    >
+                      <Camera size={20} />
+                      <span className="text-[10px] font-black mt-1 uppercase tracking-wider">Yuklash</span>
+                    </label>
+                  </div>
+
+                  <div className="flex-1 text-center sm:text-left space-y-2">
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Profil Rasmi</h4>
+                    <p className="text-[10px] text-slate-500 leading-relaxed max-w-md">Shaxsiy rasm yuklashingiz mumkin (tizim uni xavfsizlik va tezlik uchun avtomatik optimallashtiradi).</p>
+                    
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1">
+                      <input 
+                        type="file" 
+                        id="avatar-file-input" 
+                        accept="image/*" 
+                        onChange={handleFileChange}
+                        className="hidden" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('avatar-file-input')?.click()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-black rounded-lg hover:bg-slate-50 dark:hover:bg-slate-750 transition active:scale-95 cursor-pointer shadow-sm"
+                      >
+                        <Upload size={12} />
+                        <span>Komyuterdan rasm yuklash</span>
+                      </button>
+
+                      {avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setAvatar('')}
+                          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/20 text-[10px] font-black rounded-lg transition active:scale-95 cursor-pointer"
+                        >
+                          Rasmisiz o'tish
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Preset Avatars for super clean user experience */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Yoki quyidagi tayyor rasmlardan birini tanlang:</p>
+                      <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                        {[
+                          'https://api.dicebear.com/7.x/bottts/svg?seed=Lucky',
+                          'https://api.dicebear.com/7.x/pixel-art/svg?seed=Felix',
+                          'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia',
+                          'https://api.dicebear.com/7.x/lorelei/svg?seed=Sheela',
+                          'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Smiley',
+                          'https://api.dicebear.com/7.x/identicon/svg?seed=Jack'
+                        ].map((presetUrl, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setAvatar(presetUrl)}
+                            className={`w-7 h-7 rounded-lg overflow-hidden border-2 transition hover:scale-105 active:scale-95 bg-slate-100 ${avatar === presetUrl ? 'border-blue-500 scale-105 ring-2 ring-blue-500/20' : 'border-transparent dark:bg-slate-800'}`}
+                          >
+                            <img src={presetUrl} alt="Preset Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Full Name */}
                   <div className="space-y-1.5">

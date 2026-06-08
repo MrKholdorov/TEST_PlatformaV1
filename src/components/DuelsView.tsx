@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LocalDbService } from '../db/localDb';
 import { db } from '../db/firebase';
 import { doc, setDoc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
-import { Swords, Plus, Users, Hash, ArrowRight, Loader2, Play } from 'lucide-react';
+import { Swords, Plus, Users, Hash, ArrowRight, Loader2, Play, ArrowLeft } from 'lucide-react';
 import { Duel, Profile } from '../types';
 
 import { DuelArena } from './DuelArena';
@@ -242,15 +242,28 @@ export const DuelsView: React.FC<Props> = ({ currentUser, onNavigate }) => {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div className="flex items-center gap-4 py-4 border-b border-slate-200 dark:border-slate-800">
-         <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-2xl flex items-center justify-center shadow-sm">
-            <Swords size={28} />
-         </div>
-         <div className="text-left">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Real-Time Bellashuv</h1>
-            <p className="text-sm font-medium text-slate-500 mt-1">Do'stlar va raqiblar bilan kuch sinashing.</p>
-         </div>
+    <div className="w-full max-w-4xl mx-auto px-4 py-5 space-y-8 animate-in fade-in duration-300">
+      {/* Header with back button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-150 dark:border-slate-800 pb-5">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-95 border border-slate-200/30 dark:border-slate-700 shadow-sm cursor-pointer shrink-0"
+            aria-label="Ortga qaytish"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+              <Swords size={24} />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Real-Time Bellashuv</h1>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5">Do'stlar va raqiblar bilan kuch sinashing</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold border border-red-200 text-center">{error}</div>}

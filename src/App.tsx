@@ -30,6 +30,9 @@ import { StatisticsView } from './components/StatisticsView';
 import { AIMentorView } from './components/AIMentorView';
 import { DuelsView } from './components/DuelsView';
 import { SettingsView } from './components/SettingsView';
+import { SubjectsView } from './components/SubjectsView';
+import { RankingsView } from './components/RankingsView';
+import { HistoryView } from './components/HistoryView';
 
 import { isTelegramMiniApp } from './lib/telegramClient';
 
@@ -642,6 +645,9 @@ export default function App() {
             if (activeView === 'statistics') return <StatisticsView currentUser={currentUser} />;
             if (activeView === 'duels') return <DuelsView currentUser={currentUser} onNavigate={setActiveView} />;
             if (activeView === 'mentor') return <AIMentorView currentUser={currentUser} />;
+            if (activeView === 'subjects') return <SubjectsView currentUser={currentUser} onStartExam={handleStartExam} onNavigate={setActiveView} />;
+            if (activeView === 'rankings') return <RankingsView currentUser={currentUser} onNavigate={setActiveView} />;
+            if (activeView === 'history') return <HistoryView currentUser={currentUser} onNavigate={setActiveView} />;
             if (activeView === 'settings') return (
               <SettingsView 
                 currentUser={currentUser} 
@@ -660,6 +666,7 @@ export default function App() {
                 profile={currentUser}
                 onStartExam={handleStartExam}
                 onLogOut={handleLogOut}
+                onNavigate={setActiveView}
                 onAdminNavigation={(currentUser.role === 'admin' || currentUser.role === 'moderator' || currentUser.email === 'xusniddinku@gmail.com') ? () => handleAdminAuthSuccess(currentUser.email) : undefined}
               />
             );
