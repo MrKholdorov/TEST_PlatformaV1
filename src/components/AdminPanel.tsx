@@ -51,6 +51,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
   // Bulk Import state
   const [bulkText, setBulkText] = useState<string>('');
   const [importStatus, setImportStatus] = useState<{ imported: number; duplicates: number; errors: number } | null>(null);
+  const [fileIsDragging, setFileIsDragging] = useState<boolean>(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
 
   // Users audit state
   const [usersList, setUsersList] = useState<Profile[]>([]);
@@ -275,6 +277,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
     alert(`Muvaffaqiyatli yangilandi!\n\nIsm: ${fullNameInput}\nUnikal Login: ${loginInput}\nYangi Parol: ${pwdInput}`);
   };
 
+  // File drag & drop and selector processing
+  const handleFileUpload = (file: File) => {
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        setBulkText(text);
+        setUploadedFileName(file.name);
+      }
+    };
+    reader.onerror = () => {
+      alert("Xatolik: Faylni o'qishda muammo yuz berdi!");
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setFileIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setFileIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setFileIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
   // Bulk Import Action
   const handleBulkImport = () => {
     const subjId = selectedSubjectId || subjects[0]?.id;
@@ -291,6 +328,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
     const status = LocalDbService.bulkImportQuestions(subjId, bulkText);
     setImportStatus(status);
     setBulkText('');
+    setUploadedFileName('');
     loadData();
   };
 
@@ -727,6 +765,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
                     <p><b>Qolip 1:</b> Savollar chiziqchalar bilan. Javob: A belgisi bilan tagida turadi.</p>
                     <p><b>Qolip 2:</b> Savollar orasida <span className="font-sans tracking-tight">"++++"</span> ko'rinishda ajratish.</p>
                     <p><b>Qolip 3:</b> To'g'ri variant oxirida panjara belgi <span className="font-sans tracking-tight">"#"</span> bilam keladi.</p>
+                  </div>
+                </div>
+
+                {/* Drag and Drop Zone */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center transition flex flex-col items-center justify-center gap-3 cursor-pointer ${
+                    fileIsDragging
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20'
+                      : uploadedFileName
+                      ? 'border-emerald-500 bg-emerald-50/10 dark:bg-emerald-950/10'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/30'
+                  }`}
+                  onClick={() => {
+                    document.getElementById('import-file-selector')?.click();
+                  }}
+                >
+                  <input
+                    type="file"
+                    id="import-file-selector"
+                    accept=".txt,.csv,.json"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleFileUpload(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <div className={`p-3 rounded-full ${uploadedFileName ? 'bg-emerald-500/10 text-emerald-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                    <Upload size={24} className={fileIsDragging ? "animate-bounce" : ""} />
+                  </div>
+                  <div>
+                    {uploadedFileName ? (
+                      <>
+                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          Fayl muvaffaqiyatli yuklandi: {uploadedFileName}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-sans tracking-tight">
+                          Fayldagi savollar quyidagi matn maydoniga joylashtirildi. Tekshirib, import qilishingiz mumkin.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans tracking-tight">
+                          Savollar faylini shu yerga yuklang yoki tanlang (.txt, .json, .csv)
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-sans tracking-tight">
+                          Tizim fayl ichidagi barcha savollarni va variantlarni avtomatik tarzda tahlil qiladi va tortib oladi.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
