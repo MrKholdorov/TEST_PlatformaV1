@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, Calculator, Compass, Languages, Award, Clock, ArrowRight, CheckCircle, 
-  XCircle, BarChart3, TrendingUp, Sparkles, ChevronRight, Bell, Trophy, BookMarked, ShieldAlert
+  XCircle, BarChart3, TrendingUp, Sparkles, ChevronRight, Bell, Trophy, BookMarked, ShieldAlert, History
 } from 'lucide-react';
 import { Subject, Profile, TestResult, Ranking, DBNotification } from '../types';
 import { LocalDbService } from '../db/localDb';
@@ -47,11 +47,20 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   useEffect(() => {
     loadDashboardData();
     
+    const handleSync = () => {
+      loadDashboardData();
+    };
+    window.addEventListener('db_synced', handleSync);
+
     // Online robust polling sync to refresh UI continuously matching server background fetches
     const intv = setInterval(() => {
       loadDashboardData();
     }, 5000);
-    return () => clearInterval(intv);
+
+    return () => {
+      window.removeEventListener('db_synced', handleSync);
+      clearInterval(intv);
+    };
   }, [profile.id, activeTab, leaderboardType]);
 
   const loadDashboardData = () => {
@@ -162,7 +171,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             ))}
           </svg>
         </div>
-        <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+        <div className="flex justify-between items-center text-[10px] text-slate-400 font-sans tracking-tight">
           <span>Tarix boshi</span>
           <span>Hozirgi vaqt</span>
         </div>
@@ -196,7 +205,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 border border-slate-100 dark:border-slate-800 min-w-[150px]">
             <div className="flex justify-between text-xs font-bold mb-1">
               <span className="text-slate-500">Tajriba (XP):</span>
-              <span className="text-blue-600 font-mono">{profile.xp || 0} XP</span>
+              <span className="text-blue-600 font-sans tracking-tight">{profile.xp || 0} XP</span>
             </div>
             <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div 
@@ -236,20 +245,20 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <div className="grid grid-cols-3 sm:grid-cols-1 gap-4">
               {/* Box 1 */}
               <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-500/15 rounded-2xl">
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Imtihonlar</p>
-                <p className="text-xl font-black text-slate-900 dark:text-white font-mono mt-1">{totalCompleted} ta</p>
+                <p className="text-xs font-semibold text-slate-500 tracking-wide">Imtihonlar</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white font-display tracking-tighter mt-1">{totalCompleted} ta</p>
               </div>
 
               {/* Box 2 */}
               <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/15 rounded-2xl">
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Eng yaxshi</p>
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-1">{bestScore}%</p>
+                <p className="text-xs font-semibold text-slate-500 tracking-wide">Eng yaxshi natija</p>
+                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-display tracking-tighter mt-1">{bestScore}%</p>
               </div>
 
               {/* Box 3 */}
               <div className="p-3 bg-orange-50/50 dark:bg-orange-950/20 border border-orange-500/15 rounded-2xl">
-                <p className="text-[10px] font-bold text-slate-500 uppercase">O'rtacha ball</p>
-                <p className="text-xl font-black text-orange-600 dark:text-orange-400 font-mono mt-1">{avgScore}%</p>
+                <p className="text-xs font-semibold text-slate-500 tracking-wide">O'rtacha ball</p>
+                <p className="text-2xl font-black text-orange-600 dark:text-orange-400 font-display tracking-tighter mt-1">{avgScore}%</p>
               </div>
             </div>
           </div>
@@ -275,18 +284,19 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 h-11 overflow-x-auto whitespace-nowrap">
             {[
               { id: 'subjects', label: '📚 Fanlar', icon: BookOpen },
-              { id: 'analytics', label: '📊 Tahlillar (Analytics)', icon: BarChart3 },
+              { id: 'analytics', label: '📊 Tahlillar', icon: BarChart3 },
+              { id: 'history', label: '📜 Tarix', icon: History },
               { id: 'rankings', label: '🏆 Peshqadamlar', icon: Trophy },
-              { id: 'notifications', label: '🔔 Bildirishnoma', icon: Bell, badgeCount: notifications.filter(n=>!n.isRead).length }
+              { id: 'notifications', label: '🔔 Bildirishnomalar', icon: Bell, badgeCount: notifications.filter(n=>!n.isRead).length }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition duration-150 cursor-pointer ${activeTab === tab.id ? 'bg-[#0F172A] text-white dark:bg-slate-850' : 'text-slate-500 hover:bg-slate-150/50 dark:hover:bg-slate-800'}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-sans tracking-tight text-[13px] font-semibold transition duration-150 cursor-pointer ${activeTab === tab.id ? 'bg-[#0F172A] text-white dark:bg-slate-850' : 'text-slate-500 hover:bg-slate-150/50 dark:hover:bg-slate-800'}`}
               >
                 <span>{tab.label}</span>
                 {tab.badgeCount && tab.badgeCount > 0 ? (
-                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold font-mono animate-bounce">{tab.badgeCount}</span>
+                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold font-sans tracking-tight animate-bounce">{tab.badgeCount}</span>
                 ) : null}
               </button>
             ))}
@@ -327,8 +337,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   </div>
                   
                   <div className="flex flex-col items-start md:items-end shrink-0 gap-1.5">
-                    <span className="text-[10px] font-mono text-blue-200 font-bold uppercase">UMUMIY SAVOLLAR</span>
-                    <span className="text-lg font-black font-mono text-white bg-white/10 px-3 py-1 rounded-xl backdrop-blur-md">
+                    <span className="text-xs text-blue-200/80 font-medium">Umumiy savollar</span>
+                    <span className="text-2xl font-black font-display tracking-tight text-white bg-white/10 px-4 py-1.5 rounded-xl backdrop-blur-md">
                       {LocalDbService.getQuestions().length} ta bazada
                     </span>
                   </div>
@@ -336,10 +346,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
                 <div className="relative mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-100 font-medium">
                   <p>
-                    O'rtacha natijangiz: <span className="font-bold underline text-white font-mono">
+                    O'rtacha natijangiz: <span className="font-bold underline text-white font-sans tracking-tight">
                       {results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
                         ? `${Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore))}%` 
-                        : "topshirilmagan"}
+                        : "Hali topshirilmagan"}
                     </span>
                   </p>
                   <span className="inline-flex items-center gap-1 font-bold text-white group-hover:translate-x-1 transition duration-155">
@@ -362,8 +372,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           <DynamicIcon name={sub.icon} size={20} />
                         </div>
                         <div className="flex flex-col items-end">
-                          <span className="text-[10px] font-mono text-slate-400 font-bold uppercase">Savollar soni</span>
-                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">{sub.totalQuestions} ta</span>
+                          <span className="text-[10px] font-sans tracking-tight text-slate-400 font-bold uppercase">Savollar soni</span>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans tracking-tight">{sub.totalQuestions} ta</span>
                         </div>
                       </div>
 
@@ -378,7 +388,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     {/* Progress representation */}
                     <div className="mt-5 pt-4 border-t border-slate-50 dark:border-slate-800 space-y-2">
                       <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400">Oxirgi natija: <span className="font-bold font-mono text-slate-600 dark:text-slate-300">{sub.lastScore ? `${sub.lastScore}%` : 'topshirilmagan'}</span></span>
+                        <span className="text-slate-400">Oxirgi natijangiz: <span className="font-bold text-slate-600 dark:text-slate-300">{sub.lastScore ? `${sub.lastScore}%` : 'Hali topshirilmagan'}</span></span>
                         <span className="font-bold text-blue-600 dark:text-blue-400">Eng yuqori: {sub.progress}%</span>
                       </div>
                       <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -391,17 +401,84 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: History */}
+          {activeTab === 'history' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
+                <div className="flex items-center gap-3 mb-6">
+                  <History className="text-blue-500" size={24} />
+                  <div>
+                    <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-200 font-display">Tarix</h3>
+                    <p className="text-xs text-slate-500 font-sans tracking-tight mt-1">Sizning barcha oldingi imtihon natijalaringiz.</p>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  {results.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400 font-sans tracking-tight text-sm">
+                      <History className="mx-auto h-12 w-12 text-slate-200 dark:text-slate-800 mb-3" />
+                      Siz hali hech qanday test ishlamagansiz.
+                    </div>
+                  ) : (
+                    <table className="w-full text-left font-sans tracking-tight text-xs">
+                      <thead className="bg-[#F8FAFC] dark:bg-slate-850/50 text-slate-500 dark:text-slate-400">
+                        <tr>
+                          <th className="px-4 py-3 rounded-l-lg font-semibold uppercase">Sana</th>
+                          <th className="px-4 py-3 font-semibold uppercase">Fan Nomi</th>
+                          <th className="px-4 py-3 font-semibold uppercase text-center">Test turi</th>
+                          <th className="px-4 py-3 font-semibold uppercase text-center">To'g'ri</th>
+                          <th className="px-4 py-3 font-semibold uppercase text-center">Xato</th>
+                          <th className="px-4 py-3 font-semibold uppercase text-center">Foiz %</th>
+                          <th className="px-4 py-3 rounded-r-lg font-semibold uppercase text-center">Vaqt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {[...results].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(result => (
+                          <tr key={result.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="px-4 py-3.5 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                              {new Date(result.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="px-4 py-3.5 font-bold text-slate-800 dark:text-slate-200">
+                              {result.subjectName}
+                            </td>
+                            <td className="px-4 py-3.5 text-center text-slate-600 dark:text-slate-300">
+                              {result.testType} ta
+                            </td>
+                            <td className="px-4 py-3.5 text-center text-emerald-600 bg-emerald-50/50 dark:bg-transparent">
+                              {result.correctAnswers}
+                            </td>
+                            <td className="px-4 py-3.5 text-center text-red-600 bg-red-50/50 dark:bg-transparent">
+                              {result.wrongAnswers}
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md font-bold ${result.percentageScore >= 60 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                {result.percentageScore}%
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-center text-slate-500 dark:text-slate-400">
+                              {result.completionTimeFormatted}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB: Analytical records overview */}
           {activeTab === 'analytics' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 font-mono">📈 % KO'RSATKICHLAR DINAMIKASI (Diagramma)</h3>
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 font-sans tracking-tight">📈 % KO'RSATKICHLAR DINAMIKASI (Diagramma)</h3>
                 {renderSVGLineChart()}
               </div>
 
               {/* Recent test results list */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium text-left">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-50 dark:border-slate-800 pb-3 font-mono">📋 YAQINDA TOPSHIRILGAN IMTIHON NATIJALARI</h3>
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 border-b border-slate-50 dark:border-slate-800 pb-3 font-sans tracking-tight">📋 YAQINDA TOPSHIRILGAN IMTIHON NATIJALARI</h3>
                 
                 {results.length === 0 ? (
                   <p className="text-xs text-slate-400 text-center py-6">Hech qanday natija saqlanmagan...</p>
@@ -430,13 +507,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         <div className="flex items-center gap-4 justify-between sm:justify-end">
                           <div className="text-right">
                             <p className="text-xs text-slate-400 font-bold uppercase">To'g'ri / Noto'g'ri</p>
-                            <p className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                            <p className="text-xs font-sans tracking-tight font-bold text-slate-700 dark:text-slate-300 mt-0.5">
                               {r.correctAnswers} / {r.wrongAnswers}
                             </p>
                           </div>
                           
                           <div className="text-right">
-                            <span className={`text-lg font-black font-mono ${r.percentageScore >= 60 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            <span className={`text-lg font-black font-sans tracking-tight ${r.percentageScore >= 60 ? 'text-emerald-500' : 'text-red-500'}`}>
                               {r.percentageScore}%
                             </span>
                           </div>
@@ -450,7 +527,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                               Sertifikat
                             </button>
                           ) : (
-                            <span className="text-[10px] text-slate-400 italic font-mono px-2">Yetersiz ball</span>
+                            <span className="text-[10px] text-slate-400 italic font-sans tracking-tight px-2">Yetersiz ball</span>
                           )}
                         </div>
                       </div>
@@ -467,13 +544,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               
               {/* Type Category selection */}
               <div className="flex flex-wrap gap-2 items-center justify-between border-b border-indigo-100 dark:border-slate-800 pb-3">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">Imtihon turi bo'yicha filter:</span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans tracking-tight">Imtihon turi bo'yicha filter:</span>
                 <div className="flex gap-1">
                   {([20, 30, 50, 100] as const).map((length) => (
                     <button
                       key={length}
                       onClick={() => setLeaderboardType(length)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition duration-150 cursor-pointer ${leaderboardType === length ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-sans tracking-tight font-bold border transition duration-150 cursor-pointer ${leaderboardType === length ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800'}`}
                     >
                       {length} talik test
                     </button>
@@ -486,7 +563,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
               {/* Full listings tables */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
-                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 font-mono">👥 TOP 100 LISTING (Barcha o'quvchilar ko'rsatkichi)</h3>
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200 mb-4 font-sans tracking-tight">👥 TOP 100 LISTING (Barcha o'quvchilar ko'rsatkichi)</h3>
                 
                 {leaderboardList.length === 0 ? (
                   <p className="text-xs text-slate-400 text-center py-6">Kategoriya bo'yicha imtihon topshiriqlari yo'q...</p>
@@ -497,7 +574,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                       return (
                         <div 
                           key={rank.id} 
-                          className={`flex items-center justify-between gap-4 p-3 rounded-xl border font-mono text-xs ${isTop3 ? 'bg-amber-500/5 border-amber-500/10' : 'bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800'} hover:shadow-premium transition`}
+                          className={`flex items-center justify-between gap-4 p-3 rounded-xl border font-sans tracking-tight text-xs ${isTop3 ? 'bg-amber-500/5 border-amber-500/10' : 'bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800'} hover:shadow-premium transition`}
                         >
                           <div className="flex items-center gap-3">
                             <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${index === 0 ? 'bg-amber-400 text-slate-9a0 flex font-extrabold' : index === 1 ? 'bg-slate-300 text-slate-900' : index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800'}`}>
@@ -536,7 +613,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           {activeTab === 'notifications' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-indigo-100 dark:border-slate-850 pb-3">
-                <span className="text-xs text-slate-500 font-bold font-mono">Barcha bildirishnomalar ({notifications.length} ta)</span>
+                <span className="text-xs text-slate-500 font-bold font-sans tracking-tight">Barcha bildirishnomalar ({notifications.length} ta)</span>
                 <button
                   onClick={handleMarkNotifsRead}
                   className="text-xs font-bold text-blue-600 hover:underline"
@@ -572,7 +649,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                               {n.message}
                             </p>
                           </div>
-                          <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                          <span className="text-[10px] text-slate-400 shrink-0 font-sans tracking-tight">
                             {new Date(n.createdAt).toLocaleDateString()}
                           </span>
                         </div>
@@ -612,9 +689,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   onClick={() => setSelectedExamType(length as any)}
                   className={`p-3 rounded-2xl border text-center transition duration-150 cursor-pointer ${selectedExamType === length ? 'bg-blue-50 text-blue-600 border-blue-500 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900 ring-4 ring-blue-500/10' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100'}`}
                 >
-                  <p className="text-lg font-black font-mono leading-none">{length}</p>
+                  <p className="text-lg font-black font-sans tracking-tight leading-none">{length}</p>
                   <p className="text-[10px] font-bold uppercase mt-1">Savolli test</p>
-                  <p className="text-[9px] font-mono whitespace-nowrap text-slate-400">{length} daqiqa vaqt</p>
+                  <p className="text-[9px] font-sans tracking-tight whitespace-nowrap text-slate-400">{length} daqiqa vaqt</p>
                 </button>
               ))}
             </div>
@@ -693,7 +770,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               }`}>
                 {selectedNotification.type || 'tizim'} Xabari
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-[10px] text-slate-400 font-sans tracking-tight">
                 {new Date(selectedNotification.createdAt).toLocaleDateString()}
               </span>
             </div>

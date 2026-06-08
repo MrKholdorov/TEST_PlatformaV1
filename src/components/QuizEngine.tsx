@@ -216,7 +216,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 tracking-wider">IMTIHON JADVALI</span>
           <h2 className="text-lg font-black text-slate-950 dark:text-white leading-tight">{subject.name}</h2>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs font-mono font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-md">
+            <span className="text-xs font-sans tracking-tight font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-md">
               Test turi: {session.testType} talik
             </span>
           </div>
@@ -251,7 +251,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           </div>
           <div>
             <p className="text-[10px] text-slate-400 font-bold uppercase">Qolgan vaqt</p>
-            <p className={`font-mono text-lg font-black leading-none ${is1MinuteCritical ? 'text-red-500 animate-[pulse_1s_infinite]' : is5MinuteWarning ? 'text-amber-500' : 'text-slate-800 dark:text-slate-200'}`}>
+            <p className={`font-sans tracking-tight text-lg font-black leading-none ${is1MinuteCritical ? 'text-red-500 animate-[pulse_1s_infinite]' : is5MinuteWarning ? 'text-amber-500' : 'text-slate-800 dark:text-slate-200'}`}>
               {formatTime(timeLeft)}
             </p>
           </div>
@@ -304,7 +304,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
         <div className="bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-premium">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
             <span className="font-bold">Savollar taraqqiyoti</span>
-            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{currentIndex + 1} / {questions.length}</span>
+            <span className="font-sans tracking-tight font-bold text-slate-800 dark:text-slate-200">{currentIndex + 1} / {questions.length}</span>
           </div>
           <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
             <div 

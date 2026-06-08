@@ -154,7 +154,7 @@ export const AdminEmulatorConsole: React.FC = () => {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span className="text-xs font-mono font-medium text-slate-500">postgres-db.production:5432</span>
+          <span className="text-xs font-sans tracking-tight font-medium text-slate-500">postgres-db.production:5432</span>
         </div>
       </div>
 
@@ -203,14 +203,14 @@ export const AdminEmulatorConsole: React.FC = () => {
               <button
                 key={tbl.id}
                 onClick={() => setSelectedTable(tbl.id)}
-                className={`px-3 py-1.5 rounded-lg font-mono text-xs border transition duration-150 ${selectedTable === tbl.id ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800'}`}
+                className={`px-3 py-1.5 rounded-lg font-sans tracking-tight text-xs border transition duration-150 ${selectedTable === tbl.id ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-800'}`}
               >
                 {tbl.label}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg font-mono">
+          <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg font-sans tracking-tight">
             <span>TABLE: public.{selectedTable}</span>
             <span>ROWS COUNT: {tableData.length}</span>
           </div>
@@ -221,7 +221,7 @@ export const AdminEmulatorConsole: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
                   {tableData.length > 0 && Object.keys(tableData[0]).map(key => (
-                    <th key={key} className="p-3 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase">
+                    <th key={key} className="p-3 text-xs font-sans tracking-tight font-bold text-slate-600 dark:text-slate-400 uppercase">
                       {key}
                     </th>
                   ))}
@@ -236,7 +236,7 @@ export const AdminEmulatorConsole: React.FC = () => {
                   </tr>
                 ) : (
                   tableData.map((row, idx) => (
-                    <tr key={idx} className="border-b border-slate-50 dark:border-slate-800/30 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 text-xs text-slate-600 dark:text-slate-300 font-mono">
+                    <tr key={idx} className="border-b border-slate-50 dark:border-slate-800/30 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 text-xs text-slate-600 dark:text-slate-300 font-sans tracking-tight">
                       {Object.values(row).map((val: any, sIdx) => (
                         <td key={sIdx} className="p-3 truncate max-w-[200px]">
                           {typeof val === 'object' ? JSON.stringify(val) : String(val)}
@@ -254,7 +254,7 @@ export const AdminEmulatorConsole: React.FC = () => {
       {/* Tab: SQL Command Terminal */}
       {activeTab === 'sql' && (
         <div className="space-y-4">
-          <div className="bg-slate-950 text-emerald-400 p-4 rounded-xl font-mono text-xs flex flex-col gap-2 relative">
+          <div className="bg-slate-950 text-emerald-400 p-4 rounded-xl font-sans tracking-tight text-xs flex flex-col gap-2 relative">
             <div className="absolute top-2 right-2 flex gap-1">
               <span className="w-3 h-3 rounded-full bg-red-500"></span>
               <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
@@ -285,8 +285,8 @@ export const AdminEmulatorConsole: React.FC = () => {
           {/* SQL terminal output */}
           {sqlOutput && (
             <div className="bg-slate-50 dark:bg-slate-800/40 p-4 border border-slate-100 dark:border-slate-800 rounded-xl space-y-2">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">SQL SO'ROV NATIJASI (JSON):</h4>
-              <pre className="text-xs font-mono text-slate-600 dark:text-slate-300 overflow-x-auto max-h-60 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 font-sans tracking-tight">SQL SO'ROV NATIJASI (JSON):</h4>
+              <pre className="text-xs font-sans tracking-tight text-slate-600 dark:text-slate-300 overflow-x-auto max-h-60 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
                 {JSON.stringify(sqlOutput, null, 2)}
               </pre>
             </div>
@@ -313,7 +313,7 @@ export const AdminEmulatorConsole: React.FC = () => {
                 <Cpu size={20} className="text-blue-500" />
                 <h3 className="font-bold text-sm">XAVFSIZLIK SQL FILTRLARI:</h3>
               </div>
-              <p className="text-xs font-mono">
+              <p className="text-xs font-sans tracking-tight">
                 SELECT matches auth.uid() = id;<br/>
                 INSERT matches authenticated_users;<br/>
                 DELETE/UPDATE ONLY matches admins_auth.
@@ -323,7 +323,7 @@ export const AdminEmulatorConsole: React.FC = () => {
 
           <div className="space-y-2">
             <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Jadvallar RLS Siyosati ro'yxati (Postgres Audit):</h4>
-            <div className="space-y-1.5 font-mono text-xs">
+            <div className="space-y-1.5 font-sans tracking-tight text-xs">
               {[
                 { table: 'profiles', rls: 'Yoqilgan', policy: 'auth.uid() = id' },
                 { table: 'subjects', rls: 'Yoqilgan', policy: "Tizimda hammaga ruxsat, tahrirlash faqat admin'ga" },
@@ -374,7 +374,7 @@ export const AdminEmulatorConsole: React.FC = () => {
 
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">ARXIVLANGAN SQL ZAXIRA NUSXALARI (Database Backups):</h4>
-            <div className="space-y-1.5 font-mono text-xs">
+            <div className="space-y-1.5 font-sans tracking-tight text-xs">
               {backups.map(b => (
                 <div key={b.id} className="flex justify-between items-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3 rounded-lg hover:shadow-premium transition">
                   <div className="flex gap-2 items-center">

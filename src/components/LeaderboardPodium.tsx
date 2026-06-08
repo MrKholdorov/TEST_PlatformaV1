@@ -44,7 +44,7 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({ top3 }) =>
         <div className="w-full mt-4 bg-gradient-to-t from-slate-200/90 to-slate-100/50 dark:from-slate-800 dark:to-slate-900 border-t-2 border-slate-300 dark:border-slate-700 rounded-t-2xl py-6 flex flex-col items-center justify-center h-28 shadow-premium md:px-2">
           <span className="text-2xl font-extrabold text-slate-400">II</span>
           <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">{second.percentage}%</span>
-          <span className="text-[10px] font-mono text-slate-400">{second.score} / {second.testType || 20}</span>
+          <span className="text-[10px] font-sans tracking-tight text-slate-400">{second.score} / {second.testType || 20}</span>
         </div>
       </div>
 
@@ -69,7 +69,7 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({ top3 }) =>
         <div className="w-full mt-4 bg-gradient-to-t from-amber-400/20 to-amber-200/10 dark:from-amber-600/15 dark:to-amber-500/5 border-t-4 border-amber-400 dark:border-amber-500 rounded-t-3xl py-8 flex flex-col items-center justify-center h-36 shadow-glow md:px-2">
           <span className="text-3xl font-extrabold text-amber-500">I</span>
           <span className="text-base font-extrabold text-amber-600 dark:text-amber-400 mt-1">{first.percentage}%</span>
-          <span className="text-xs font-mono font-bold text-amber-500">{first.score} / {first.testType || 20}</span>
+          <span className="text-xs font-sans tracking-tight font-bold text-amber-500">{first.score} / {first.testType || 20}</span>
         </div>
       </div>
 
@@ -90,7 +90,7 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({ top3 }) =>
         <div className="w-full mt-4 bg-gradient-to-t from-amber-800/10 to-amber-700/5 dark:from-amber-950/20 dark:to-slate-900 border-t-2 border-amber-800/60 dark:border-amber-800 rounded-t-2xl py-5 flex flex-col items-center justify-center h-24 shadow-premium md:px-2">
           <span className="text-xl font-extrabold text-amber-800/80 dark:text-amber-600">III</span>
           <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 mt-1">{third.percentage}%</span>
-          <span className="text-[10px] font-mono text-slate-400">{third.score} / {third.testType || 20}</span>
+          <span className="text-[10px] font-sans tracking-tight text-slate-400">{third.score} / {third.testType || 20}</span>
         </div>
       </div>
 

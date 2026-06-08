@@ -15,6 +15,10 @@ import {
   TelegramConfig
 } from '../types';
 
+import { db } from './firebase';
+import { doc, setDoc, deleteDoc, collection, onSnapshot, getDocs } from 'firebase/firestore';
+
+
 // Seed initial subjects
 const INITIAL_SUBJECTS: Subject[] = [
   {
@@ -638,10 +642,8 @@ export class LocalDbService {
 
   private static set(key: string, data: any) {
     localStorage.setItem(key, JSON.stringify(data));
-    this.pushToBackend();
   }
 
-  // Full-Stack Synchronization Engines
   static getPayload() {
     return {
       otp_profiles: localStorage.getItem('otp_profiles') ? JSON.parse(localStorage.getItem('otp_profiles')!) : [],
@@ -656,46 +658,63 @@ export class LocalDbService {
     };
   }
 
-  private static pushTimeout: any = null;
-
-  static pushToBackend() {
-    if (this.pushTimeout) {
-      clearTimeout(this.pushTimeout);
-    }
-    this.pushTimeout = setTimeout(() => {
-      const payload = this.getPayload();
-      fetch('/api/db/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payload })
-      }).catch(e => console.warn("Failed to push DB to server:", e));
-    }, 150);
-  }
-
   static async syncWithBackend(): Promise<void> {
+    if ((window as any).__firebaseSynced) return;
+    (window as any).__firebaseSynced = true;
+
     try {
-      const res = await fetch('/api/db/data');
-      const json = await res.json();
-      if (json.success && json.data) {
-        const serverData = json.data;
-        Object.keys(serverData).forEach(key => {
-          localStorage.setItem(key, JSON.stringify(serverData[key]));
-        });
-        console.log("Database synchronized fully from Express backend server.");
-      } else {
-        // First initialization post
-        this.initialize();
+      // Check if DB is empty to seed initial mock values
+      const subjectsSnapshot = await getDocs(collection(db, 'subjects'));
+      if (subjectsSnapshot.empty) {
+        console.log("Firestore is empty, seeding with initial local data...");
         const payload = this.getPayload();
-        await fetch('/api/db/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ payload })
-        });
-        console.log("Server side database initialized with client seeds.");
+        
+        const pushBatch = async (items: any[], colName: string) => {
+          for (const item of items) {
+             if (item && item.id) await setDoc(doc(db, colName, item.id), item);
+          }
+        };
+        
+        await pushBatch(payload.otp_profiles, 'profiles');
+        await pushBatch(payload.otp_subjects, 'subjects');
+        await pushBatch(payload.otp_questions, 'questions');
+        await pushBatch(payload.otp_sessions, 'sessions');
+        await pushBatch(payload.otp_results, 'results');
+        await pushBatch(payload.otp_rankings, 'rankings');
+        await pushBatch(payload.otp_notifications, 'notifications');
+        await pushBatch(payload.otp_activity_logs, 'activity_logs');
+        await setDoc(doc(db, 'config', 'telegram'), payload.otp_telegram_config);
       }
-    } catch (error) {
-      console.warn("Backend sync failed. Running off local data stores:", error);
+    } catch (e) {
+      console.warn("Failed to seed Firebase initial data:", e);
     }
+
+    // Set up realtime sync
+    const collectionsMap = [
+      { key: 'otp_profiles', name: 'profiles' },
+      { key: 'otp_subjects', name: 'subjects' },
+      { key: 'otp_questions', name: 'questions' },
+      { key: 'otp_sessions', name: 'sessions' },
+      { key: 'otp_results', name: 'results' },
+      { key: 'otp_rankings', name: 'rankings' },
+      { key: 'otp_notifications', name: 'notifications' },
+      { key: 'otp_activity_logs', name: 'activity_logs' }
+    ];
+
+    collectionsMap.forEach(col => {
+      onSnapshot(collection(db, col.name), (snapshot) => {
+        const items = snapshot.docs.map(d => d.data());
+        localStorage.setItem(col.key, JSON.stringify(items));
+        window.dispatchEvent(new Event('db_synced'));
+      });
+    });
+
+    onSnapshot(doc(db, 'config', 'telegram'), (docSnap) => {
+      if (docSnap.exists()) {
+        localStorage.setItem('otp_telegram_config', JSON.stringify(docSnap.data()));
+        window.dispatchEvent(new Event('db_synced'));
+      }
+    });
   }
 
   // Profiles
@@ -712,6 +731,7 @@ export class LocalDbService {
       profiles.push(profile);
     }
     this.set('otp_profiles', profiles);
+    setDoc(doc(db, 'profiles', profile.id), profile).catch(e => console.warn(e));
   }
 
   // Subjects
@@ -728,15 +748,23 @@ export class LocalDbService {
       subjects.push(subject);
     }
     this.set('otp_subjects', subjects);
+    setDoc(doc(db, 'subjects', subject.id), subject).catch(e => console.warn(e));
     this.sendTelegramNotification(`📚 Yangi fan qo'shildi!\nFan nomi: ${subject.name}\nSavollar soni: ${subject.totalQuestions}`);
   }
 
   static deleteSubject(id: string): void {
     const subjects = this.getSubjects().filter(s => s.id !== id);
     this.set('otp_subjects', subjects);
+    deleteDoc(doc(db, 'subjects', id)).catch(e => console.warn(e));
+    
     // Also delete associated questions
-    const questions = this.getQuestions().filter(q => q.subjectId !== id);
-    this.set('otp_questions', questions);
+    const questions = this.getQuestions();
+    const remaining = questions.filter(q => q.subjectId !== id);
+    const deletedQ = questions.filter(q => q.subjectId === id);
+    this.set('otp_questions', remaining);
+    deletedQ.forEach(q => {
+      deleteDoc(doc(db, 'questions', q.id)).catch(e => console.warn(e));
+    });
   }
 
   // Questions
@@ -753,6 +781,7 @@ export class LocalDbService {
       questions.push(question);
     }
     this.set('otp_questions', questions);
+    setDoc(doc(db, 'questions', question.id), question).catch(e => console.warn(e));
 
     // Update subject total question count
     this.updateSubjectCount(question.subjectId);
@@ -763,6 +792,7 @@ export class LocalDbService {
     const q = questions.find(item => item.id === id);
     const updated = questions.filter(item => item.id !== id);
     this.set('otp_questions', updated);
+    deleteDoc(doc(db, 'questions', id)).catch(e => console.warn(e));
     if (q) {
       this.updateSubjectCount(q.subjectId);
     }
@@ -775,6 +805,7 @@ export class LocalDbService {
     if (idx >= 0) {
       subjects[idx].totalQuestions = count;
       this.set('otp_subjects', subjects);
+      setDoc(doc(db, 'subjects', subjectId), subjects[idx]).catch(e => console.warn(e));
     }
   }
 
@@ -792,6 +823,7 @@ export class LocalDbService {
       sessions.push(session);
     }
     this.set('otp_sessions', sessions);
+    setDoc(doc(db, 'sessions', session.id), session).catch(e => console.warn(e));
   }
 
   static getActiveSession(userId: string): TestSession | undefined {
@@ -807,6 +839,7 @@ export class LocalDbService {
     const results = this.getResults();
     results.push(result);
     this.set('otp_results', results);
+    setDoc(doc(db, 'results', result.id), result).catch(e => console.warn(e));
 
     // Enter into activities log
     const user = this.getProfiles().find(p => p.id === result.userId);
@@ -856,6 +889,7 @@ export class LocalDbService {
       }
 
       this.set('otp_rankings', rankings);
+      setDoc(doc(db, 'rankings', entry.id), entry).catch(e => console.warn(e));
 
       // If achievement of high score, trigger Telegram notification!
       if (result.percentageScore >= 90) {
@@ -890,13 +924,16 @@ export class LocalDbService {
     };
     list.unshift(item);
     this.set('otp_notifications', list);
+    setDoc(doc(db, 'notifications', item.id), item).catch(e => console.warn(e));
   }
 
   static markNotificationsRead(userId?: string) {
     const list = this.get<DBNotification>('otp_notifications');
     const updated = list.map(n => {
       if (!userId || n.userId === userId) {
-        return { ...n, isRead: true };
+        const changed = { ...n, isRead: true };
+        setDoc(doc(db, 'notifications', n.id), changed).catch(e => console.warn(e));
+        return changed;
       }
       return n;
     });
@@ -907,7 +944,9 @@ export class LocalDbService {
     const list = this.get<DBNotification>('otp_notifications');
     const updated = list.map(n => {
       if (n.id === notifId) {
-        return { ...n, isRead: true };
+        const changed = { ...n, isRead: true };
+        setDoc(doc(db, 'notifications', n.id), changed).catch(e => console.warn(e));
+        return changed;
       }
       return n;
     });
@@ -931,8 +970,10 @@ export class LocalDbService {
       createdAt: new Date().toISOString()
     };
     logs.unshift(item);
-    // Keep max 100 logs
+    
+    // We update local limit to 100
     this.set('otp_activity_logs', logs.slice(0, 100));
+    setDoc(doc(db, 'activity_logs', item.id), item).catch(e => console.warn(e));
   }
 
   // Telegram Configuration
@@ -944,6 +985,7 @@ export class LocalDbService {
 
   static saveTelegramConfig(cfg: TelegramConfig) {
     this.set('otp_telegram_config', cfg);
+    setDoc(doc(db, 'config', 'telegram'), cfg).catch(e => console.warn(e));
   }
 
   static sendTelegramNotification(text: string) {

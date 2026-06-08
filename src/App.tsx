@@ -221,14 +221,14 @@ export default function App() {
               <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase font-sans">
                 Online Imtihon
               </span>
-              <span className="block text-[8px] font-mono text-blue-600 leading-none">O'quv Markazi</span>
+              <span className="block text-[8px] font-sans tracking-tight text-blue-600 leading-none">O'quv Markazi</span>
             </div>
           </div>
 
           {/* Links menu elements */}
           {activeView !== 'quiz' && (
             <div className="flex items-center gap-4">
-              <nav className="hidden sm:flex items-center gap-2 font-mono text-xs">
+              <nav className="hidden sm:flex items-center gap-2 font-sans tracking-tight text-xs">
                 <button
                   onClick={() => setActiveView('dashboard')}
                   className={`px-3.5 py-2 rounded-xl transition ${activeView === 'dashboard' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800'}`}
@@ -255,7 +255,7 @@ export default function App() {
 
                 {/* Status bar Admin login alert */}
                 {adminEmail && (
-                  <span className="bg-amber-100 text-amber-800 font-mono text-[9px] font-bold px-2 py-1 rounded hidden sm:inline-block">
+                  <span className="bg-amber-100 text-amber-800 font-sans tracking-tight text-[9px] font-bold px-2 py-1 rounded hidden sm:inline-block">
                     🔐 ADMIN FAOL
                   </span>
                 )}
@@ -292,7 +292,7 @@ export default function App() {
               <div className="w-full max-w-2xl px-4 py-8 text-center space-y-6">
                 <div>
                   <span className="text-xs font-black uppercase tracking-widest text-[#10B981] bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-full">SINOV MUVOFIQYATLI TOPSHIRILDI</span>
-                  <p className="text-slate-400 text-xs mt-2 font-mono">Imtihon natijalari muvaffaqiyatli saqlandi.</p>
+                  <p className="text-slate-400 text-xs mt-2 font-sans tracking-tight">Imtihon natijalari muvaffaqiyatli saqlandi.</p>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-premium space-y-6">
@@ -301,10 +301,10 @@ export default function App() {
                   </div>
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">Natijalar tahlili</h1>
-                    <p className="text-xs text-slate-500 mt-1 font-mono">{currentResult.subjectName} | {currentResult.testType} talik test</p>
+                    <p className="text-xs text-slate-500 mt-1 font-sans tracking-tight">{currentResult.subjectName} | {currentResult.testType} talik test</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto font-mono text-left">
+                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto font-sans tracking-tight text-left">
                     <div className="p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl">
                       <p className="text-[10px] text-slate-400 font-bold uppercase">To'g'ri javoblar</p>
                       <p className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{currentResult.correctAnswers} ta</p>
@@ -351,7 +351,7 @@ export default function App() {
                     className="w-full bg-[#0F172A] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition duration-150 shadow-premium active:scale-95 text-xs"
                     id="btn-return-dashboard"
                   >
-                    Mening Dashboardga qaytish
+                    Asosiy sahifaga qaytish
                   </button>
                 </div>
                 

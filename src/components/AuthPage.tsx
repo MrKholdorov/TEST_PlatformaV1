@@ -143,7 +143,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         </div>
 
         {/* Technical Footer citation */}
-        <div className="text-[10px] text-blue-200/50 mt-6 font-mono">
+        <div className="text-[10px] text-blue-200/50 mt-6 font-sans tracking-tight">
           Online Imtihon platform v1.8 (Node production build)
         </div>
       </div>
@@ -158,7 +158,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               onClick={() => setIsLoginMode(true)}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition duration-150 cursor-pointer ${isLoginMode ? 'bg-[#0F172A] text-white dark:bg-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
             >
-              Kirish (Log In)
+              Tizimga kirish
             </button>
             <button
               onClick={() => {
@@ -166,7 +166,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition duration-150 cursor-pointer ${!isLoginMode ? 'bg-[#0F172A] text-white dark:bg-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
             >
-              Roy'xatdan o'tish (Sign Up)
+              Ro'yxatdan o'tish
             </button>
           </div>
 
@@ -174,7 +174,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           {isLoginMode ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Foydalanuvchi Logini (Login)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Foydalanuvchi logini</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-3.5 text-slate-400" />
                   <input
@@ -189,7 +189,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Maxfiy kalit (Password)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Maxfiy parol</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
                   <input
@@ -229,14 +229,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 id="btn-login-submit"
               >
                 <LogIn size={16} />
-                Profilga Tizimga kirish
+                Tizimga kirish
               </button>
             </form>
           ) : (
             /* Form Content: SIGNUP MODE */
             <form onSubmit={handleRegisterSubmit} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Foydalanuvchi Logini (unikal bo'lishi shart)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Foydalanuvchi logini (Takrorlanmas bo'lishi shart)</label>
                 <input
                   type="text"
                   required
@@ -248,7 +248,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">To'liq Familiya Ism Sharh (F.I.SH * Hujjat uchun)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">To'liq ism-sharif (F.I.Sh - Sertifikat uchun)</label>
                 <input
                   type="text"
                   required
@@ -260,7 +260,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Elektron pochta manzili (Email)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Elektron pochta manzili</label>
                 <input
                   type="email"
                   required
@@ -272,7 +272,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Telefon raqam (SMS/Xabar uchun)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Telefon raqam</label>
                 <input
                   type="tel"
                   required
@@ -284,14 +284,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Maxfiy kalitparol</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Maxfiy parol</label>
                 <input
                   type="password"
                   required
                   value={registerForm.password}
                   onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs"
-                  placeholder="Kamida 6 xonali"
+                  placeholder="Kamida 6 belgi"
                 />
               </div>
 
@@ -300,7 +300,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 className="w-full bg-[#0F172A] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition duration-150 shadow-premium flex items-center justify-center gap-2 active:scale-95 cursor-pointer text-xs"
                 id="btn-register-submit"
               >
-                Muvaffaqiyatli Ro'yxatdan o'tish
+                Ro'yxatdan o'tish
               </button>
             </form>
           )}

@@ -78,7 +78,7 @@ export const Certificate: React.FC<CertificateProps> = ({
               <div className="absolute inset-1 border-2 border-dashed border-amber-200 rounded-full animate-[spin_20s_linear_infinite]"></div>
               <Award className="text-white w-8 h-8" />
             </div>
-            <span className="text-[9px] font-mono mt-1 font-bold tracking-widest text-amber-600 dark:text-amber-500">MOCK VERIFIED</span>
+            <span className="text-[9px] font-sans tracking-tight mt-1 font-bold tracking-widest text-amber-600 dark:text-amber-500">MOCK VERIFIED</span>
           </div>
 
           {/* Heading */}
@@ -115,7 +115,7 @@ export const Certificate: React.FC<CertificateProps> = ({
           <div className="w-full grid grid-cols-3 gap-4 text-xs items-end mt-4">
             <div className="text-left">
               <p className="text-slate-400">Sertifikat kodi:</p>
-              <p className="font-mono font-bold text-slate-800 dark:text-slate-200">{certificateNumber}</p>
+              <p className="font-sans tracking-tight font-bold text-slate-800 dark:text-slate-200">{certificateNumber}</p>
             </div>
             <div className="flex flex-col items-center">
               <div className="w-24 h-12 border-b-2 border-slate-300 dark:border-slate-700 font-serif text-sm italic flex items-center justify-center text-blue-600/60 dark:text-blue-400/40">

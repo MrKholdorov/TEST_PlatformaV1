@@ -60,6 +60,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
 
   useEffect(() => {
     loadData();
+
+    const handleSync = () => {
+      loadData();
+    };
+    window.addEventListener('db_synced', handleSync);
+    
+    // Add interval fallback for robustness
+    const interval = setInterval(loadData, 5000);
+
+    return () => {
+      window.removeEventListener('db_synced', handleSync);
+      clearInterval(interval);
+    };
   }, [activeMenu, selectedSubjectId]);
 
   const loadData = () => {
@@ -319,7 +332,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
             <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-premium flex items-center justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{item.label}</p>
-                <p className="text-2xl font-black text-slate-900 dark:text-white font-mono leading-none mt-1">{item.value}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white font-sans tracking-tight leading-none mt-1">{item.value}</p>
                 <p className="text-[10px] text-slate-500 font-medium">{item.sub}</p>
               </div>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.color}`}>
@@ -365,7 +378,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-premium text-left">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">🪵 REAL VAQTDAGI AKTIVLIK LOG JADVALI (Log Audit)</h3>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans tracking-tight">🪵 REAL VAQTDAGI AKTIVLIK LOG JADVALI (Log Audit)</h3>
                     <p className="text-[10px] text-slate-500 mt-0.5">O'quvchilar va tizim harakatlarining audit yozuvlari</p>
                   </div>
                   <button
@@ -383,7 +396,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                   {LocalDbService.getLogs().map((log) => (
                     <div 
                       key={log.id} 
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl text-xs font-mono"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-xl text-xs font-sans tracking-tight"
                     >
                       <div className="space-y-0.5">
                         <p className="text-slate-800 dark:text-slate-300 font-bold truncate max-w-sm">
@@ -407,7 +420,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-scale-up">
               {/* Form column */}
               <div className="md:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium">
-                <h3 className="font-bold text-sm text-slate-905 dark:text-white border-b border-slate-100 dark:border-slate-805 pb-3 mb-4 font-mono">
+                <h3 className="font-bold text-sm text-slate-905 dark:text-white border-b border-slate-100 dark:border-slate-805 pb-3 mb-4 font-sans tracking-tight">
                   {editSubjId ? '✏️ FANNI TAHRIRLASH' : '➕ YANGI FAN QO\'SHISh'}
                 </h3>
                 
@@ -429,7 +442,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                     <select
                       value={newSubj.icon}
                       onChange={(e) => setNewSubj({ ...newSubj, icon: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs font-sans tracking-tight"
                     >
                       {['BookOpen', 'Calculator', 'Compass', 'Languages', 'Award', 'Settings', 'Smartphone', 'Eye'].map(ic => (
                         <option key={ic} value={ic}>{ic}</option>
@@ -473,7 +486,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
 
               {/* List column */}
               <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium">
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 font-mono">📚 MAVJUD FANLAR RO'YXATI</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 font-sans tracking-tight">📚 MAVJUD FANLAR RO'YXATI</h3>
                 <div className="space-y-2">
                   {subjects.map(s => (
                     <div 
@@ -486,7 +499,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                         </div>
                         <div>
                           <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 leading-tight">{s.name}</p>
-                          <p className="text-[10px] text-slate-450 mt-0.5">Savollar jami: <span className="font-bold font-mono">{s.totalQuestions} ta</span></p>
+                          <p className="text-[10px] text-slate-450 mt-0.5">Savollar jami: <span className="font-bold font-sans tracking-tight">{s.totalQuestions} ta</span></p>
                         </div>
                       </div>
 
@@ -517,16 +530,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
               {/* Category select block & Form */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans tracking-tight">
                     {editQuestId ? '✏️ TEST SAVOLINI TAHRIRLASH' : '❓ YANGI TEST SAVOLI QO\'SHISH'}
                   </h3>
                   
                   <div className="flex gap-2 items-center text-xs">
-                    <span className="font-mono">Fannini tanlang:</span>
+                    <span className="font-sans tracking-tight">Fannini tanlang:</span>
                     <select
                       value={selectedSubjectId}
                       onChange={(e) => setSelectedSubjectId(e.target.value)}
-                      className="px-3 py-1.5 border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono font-black"
+                      className="px-3 py-1.5 border border-slate-200 dark:border-slate-805 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-xs font-sans tracking-tight font-black"
                     >
                       {subjects.map(s => (
                         <option key={s.id} value={s.id}>{s.name} ({s.totalQuestions} ta savol)</option>
@@ -570,7 +583,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                     <select
                       value={newQuest.correctAnswer}
                       onChange={(e) => setNewQuest({ ...newQuest, correctAnswer: e.target.value as any })}
-                      className="w-28 px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono font-bold"
+                      className="w-28 px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs font-sans tracking-tight font-bold"
                     >
                       {['A', 'B', 'C', 'D'].map(key => (
                         <option key={key} value={key}>Variant {key}</option>
@@ -610,7 +623,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
 
               {/* Questions table list */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium">
-                <h3 className="font-bold text-sm text-slate-805 dark:text-white border-b border-slate-100 dark:border-slate-805 pb-3 mb-4 font-mono">📋 FILTERLANGAN FAN SAVOLLARI ({questions.length} ta savol)</h3>
+                <h3 className="font-bold text-sm text-slate-805 dark:text-white border-b border-slate-100 dark:border-slate-805 pb-3 mb-4 font-sans tracking-tight">📋 FILTERLANGAN FAN SAVOLLARI ({questions.length} ta savol)</h3>
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                   {questions.length === 0 ? (
                     <p className="text-xs text-slate-400 py-6 text-center">Fanda hali savollar kiritilmagan...</p>
@@ -624,7 +637,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                           <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 text-left">
                             {idx + 1}. {q.questionText}
                           </p>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[10px] text-slate-400 font-mono text-left">
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[10px] text-slate-400 font-sans tracking-tight text-left">
                             <span>A: {q.options.A}</span>
                             <span>B: {q.options.B}</span>
                             <span>C: {q.options.C}</span>
@@ -662,17 +675,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
             <div className="space-y-6 animate-scale-up">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium text-left space-y-4">
                 <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">📥 YUKLASH TIZIMI (BULK IMPORT TEST)</h3>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans tracking-tight">📥 YUKLASH TIZIMI (BULK IMPORT TEST)</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Xavfsiz va aniqlangan formatlar orqali ommaviy savollarni kiritish</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                   <div className="text-xs">
-                    <span className="font-bold font-mono">Import qilinadigan fan yo'nalishi:</span>
+                    <span className="font-bold font-sans tracking-tight">Import qilinadigan fan yo'nalishi:</span>
                     <select
                       value={selectedSubjectId}
                       onChange={(e) => setSelectedSubjectId(e.target.value)}
-                      className="w-full mt-1.5 px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none text-xs font-mono font-bold"
+                      className="w-full mt-1.5 px-3 py-2 border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-lg outline-none text-xs font-sans tracking-tight font-bold"
                     >
                       {subjects.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
@@ -684,8 +697,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                   <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3 text-[10px] leading-relaxed text-blue-700 dark:text-blue-400 space-y-1">
                     <p className="font-bold">QO'LLAB QUVVATLANADIGAN FORMATLAR:</p>
                     <p><b>Qolip 1:</b> Savollar chiziqchalar bilan. Javob: A belgisi bilan tagida turadi.</p>
-                    <p><b>Qolip 2:</b> Savollar orasida <span className="font-mono">"++++"</span> ko'rinishda ajratish.</p>
-                    <p><b>Qolip 3:</b> To'g'ri variant oxirida panjara belgi <span className="font-mono">"#"</span> bilam keladi.</p>
+                    <p><b>Qolip 2:</b> Savollar orasida <span className="font-sans tracking-tight">"++++"</span> ko'rinishda ajratish.</p>
+                    <p><b>Qolip 3:</b> To'g'ri variant oxirida panjara belgi <span className="font-sans tracking-tight">"#"</span> bilam keladi.</p>
                   </div>
                 </div>
 
@@ -696,7 +709,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
                     rows={8}
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
-                    className="w-full p-4 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono resize-none leading-relaxed"
+                    className="w-full p-4 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 text-xs font-sans tracking-tight resize-none leading-relaxed"
                     placeholder="Masalan:
 
 Informatika fani nimani o'rganadi?
@@ -718,7 +731,7 @@ Javob: B"
 
                 {/* Import actions */}
                 <div className="flex justify-between items-center pt-2">
-                  <span className="text-[10px] text-slate-400 font-mono">Tizim formatlarni bir zumda silliq ajratadi.</span>
+                  <span className="text-[10px] text-slate-400 font-sans tracking-tight">Tizim formatlarni bir zumda silliq ajratadi.</span>
                   <button
                     onClick={handleBulkImport}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition duration-150 shadow-glow flex items-center gap-2 active:scale-95 cursor-pointer"
@@ -756,7 +769,7 @@ Javob: B"
                 
                 {/* User selection column */}
                 <div className="md:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-premium space-y-2">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 font-mono">👥 TIZIM O'QUVChILARI</h3>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 font-sans tracking-tight">👥 TIZIM O'QUVChILARI</h3>
                   <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {usersList.map(usr => (
                       <div
@@ -773,14 +786,14 @@ Javob: B"
 
                 {/* Audit detail column */}
                 <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-premium space-y-4 min-h-[350px]">
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 font-mono">📊 FOYDALANUVCHI SINOVLAR TARIXI AUDITING</h3>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 font-sans tracking-tight">📊 FOYDALANUVCHI SINOVLAR TARIXI AUDITING</h3>
                   
                   {!selectedAuditUser ? (
                     <p className="text-xs text-slate-400 text-center py-10">Auditing qilish uchun chap tomondagi ro'yxatdan o'quvchini tanlang.</p>
                   ) : (
                     <div className="space-y-4">
                       {/* Contact metadata */}
-                      <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-3 rounded-xl text-xs text-slate-500 font-mono">
+                      <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-3 rounded-xl text-xs text-slate-500 font-sans tracking-tight">
                         <div>
                           <p className="text-[10px] text-slate-400 font-bold">F.I.SH:</p>
                           <p className="font-bold text-slate-800 dark:text-slate-300 mt-0.5">{selectedAuditUser.fullName}</p>
@@ -801,7 +814,7 @@ Javob: B"
 
                       {/* Admin Management Controls */}
                       <div className="p-4 border border-slate-250 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40 space-y-3 text-left">
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider font-mono">⚠️ Tizim Nazorati & Tahriri</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider font-sans tracking-tight">⚠️ Tizim Nazorati & Tahriri</h4>
                         <div className="flex flex-wrap items-center gap-3">
                           {selectedAuditUser.isBlocked ? (
                             <button
@@ -833,7 +846,7 @@ Javob: B"
                               id="edit-user-login-input"
                               key={`login-${selectedAuditUser.id}-${selectedAuditUser.login}`}
                               defaultValue={selectedAuditUser.login}
-                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-mono"
+                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-sans tracking-tight"
                             />
                           </div>
                           <div>
@@ -844,7 +857,7 @@ Javob: B"
                               id="edit-user-pwd-input"
                               key={`pwd-${selectedAuditUser.id}-${selectedAuditUser.password || 'pwd'}`}
                               defaultValue={selectedAuditUser.password || selectedAuditUser.login}
-                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-mono"
+                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-sans tracking-tight"
                             />
                           </div>
                           <div className="sm:col-span-2 text-right">
@@ -867,7 +880,7 @@ Javob: B"
                           auditUserResults.map(res => (
                             <div 
                               key={res.id}
-                              className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 rounded-xl flex justify-between items-center text-xs font-mono"
+                              className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 rounded-xl flex justify-between items-center text-xs font-sans tracking-tight"
                             >
                               <div>
                                 <p className="font-bold text-slate-800 dark:text-slate-300">{res.subjectName}</p>
@@ -902,7 +915,7 @@ Javob: B"
           {activeMenu === 'telegram' && (
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-premium text-left space-y-4 animate-scale-up">
               <div className="border-b border-slate-105 dark:border-slate-800 pb-3">
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">🔔 TELEGRAM INTEGRATSIYA SHLYUZI</h3>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans tracking-tight">🔔 TELEGRAM INTEGRATSIYA SHLYUZI</h3>
                 <p className="text-xs text-slate-405 mt-0.5">Yangi o'quvchi qo'shilishi yoki yuqori natijalar haqida ogohlantirish</p>
               </div>
 
@@ -914,7 +927,7 @@ Javob: B"
                     required
                     value={tgConfig.botToken}
                     onChange={(e) => setTgConfig({ ...tgConfig, botToken: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-sans tracking-tight text-xs"
                     placeholder="Masalan: 583948592:AAG849-mock_key"
                   />
                 </div>
@@ -926,7 +939,7 @@ Javob: B"
                     required
                     value={tgConfig.chatId}
                     onChange={(e) => setTgConfig({ ...tgConfig, chatId: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                    className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-sans tracking-tight text-xs"
                     placeholder="Masalan: -1002930492"
                   />
                 </div>
