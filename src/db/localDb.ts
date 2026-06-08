@@ -1356,4 +1356,14 @@ export class LocalDbService {
 
     console.log("Demo data successfully deleted from Firebase Firestore.");
   }
+
+  static clearUserResults(userId: string): void {
+    const results = this.getResults().filter(r => r.userId !== userId);
+    this.set('otp_results', results);
+  }
+
+  static clearUserMistakes(userId: string): void {
+    const mistakes = this.getMistakes().filter(m => m.userId !== userId);
+    this.set('otp_mistakes', mistakes);
+  }
 }

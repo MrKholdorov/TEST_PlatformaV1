@@ -14,6 +14,7 @@ interface Props {
 export const UserProfileDropdown: React.FC<Props> = ({ currentUser, theme, onToggleTheme, onLogout, onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'moderator' || currentUser.email === 'xusniddinku@gmail.com';
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -74,6 +75,9 @@ export const UserProfileDropdown: React.FC<Props> = ({ currentUser, theme, onTog
 
           <div className="py-1">
             <MenuItem icon={User} label="Profil" onClick={() => onNavigate('profile')} />
+            {isAdmin && (
+              <MenuItem icon={Settings} label="Admin Panel" onClick={() => onNavigate('admin')} color="text-indigo-600 dark:text-indigo-400 font-bold" />
+            )}
             <MenuItem icon={Activity} label="Statistika" onClick={() => onNavigate('statistics')} />
             <MenuItem icon={Trophy} label="Yutuqlar" onClick={() => onNavigate('achievements')} />
             <MenuItem icon={Swords} label="Bellashuvlar" onClick={() => onNavigate('duels')} />

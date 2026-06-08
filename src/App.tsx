@@ -28,6 +28,7 @@ import { AchievementsView } from './components/AchievementsView';
 import { StatisticsView } from './components/StatisticsView';
 import { AIMentorView } from './components/AIMentorView';
 import { DuelsView } from './components/DuelsView';
+import { SettingsView } from './components/SettingsView';
 
 import { isTelegramMiniApp } from './lib/telegramClient';
 
@@ -125,6 +126,11 @@ export default function App() {
     localStorage.removeItem('otp_active_user');
     localStorage.removeItem('otp_active_admin');
     setActiveView('dashboard');
+  };
+
+  const handleProfileUpdate = (updatedUser: Profile) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('otp_active_user', JSON.stringify(updatedUser));
   };
 
   // Launch test session workflow
@@ -305,6 +311,22 @@ export default function App() {
                 </span>
               )}
 
+              {/* Theme Toggle Button */}
+              {currentUser && (
+                <button
+                  onClick={handleToggleTheme}
+                  className="p-2 w-10 h-10 rounded-full flex items-center justify-center bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 transition-all active:scale-95 cursor-pointer mr-1 border border-slate-200/35 dark:border-slate-700/40 shadow-sm"
+                  aria-label="Theme toggle"
+                  title={theme === 'light' ? "Tungi rejim" : "Kunduzgi rejim"}
+                >
+                  {theme === 'light' ? (
+                    <Moon size={18} className="text-slate-600 dark:text-slate-400" />
+                  ) : (
+                    <Sun size={18} className="text-amber-500 fill-amber-300/40" />
+                  )}
+                </button>
+              )}
+
               {/* User Profile Dropdown */}
               {currentUser && (
                 <UserProfileDropdown
@@ -312,7 +334,13 @@ export default function App() {
                   theme={theme}
                   onToggleTheme={handleToggleTheme}
                   onLogout={handleLogOut}
-                  onNavigate={setActiveView}
+                  onNavigate={(view) => {
+                    if (view === 'admin') {
+                      handleAdminAuthSuccess(currentUser.email);
+                    } else {
+                      setActiveView(view);
+                    }
+                  }}
                 />
               )}
             </div>
@@ -455,7 +483,15 @@ export default function App() {
             if (activeView === 'statistics') return <StatisticsView currentUser={currentUser} />;
             if (activeView === 'duels') return <DuelsView currentUser={currentUser} onNavigate={setActiveView} />;
             if (activeView === 'mentor') return <AIMentorView currentUser={currentUser} />;
-            if (activeView === 'settings') return <div className="p-8 text-center"><h1 className="text-2xl font-bold">Sozlamalar (Tez kunda)</h1></div>;
+            if (activeView === 'settings') return (
+              <SettingsView 
+                currentUser={currentUser} 
+                onProfileUpdate={handleProfileUpdate} 
+                onLogOut={handleLogOut} 
+                theme={theme} 
+                onToggleTheme={handleToggleTheme} 
+              />
+            );
           }
 
           // If registered user is logged in, show User Main Dashboard

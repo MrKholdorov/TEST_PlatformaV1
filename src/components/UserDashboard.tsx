@@ -182,58 +182,6 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   return (
     <div className="w-full max-w-7xl mx-auto py-4 px-4 text-left" id="user-dashboard-view">
       
-      {/* Top Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 mb-6 shadow-premium">
-        <div className="flex items-center gap-4">
-          {/* Avatar frame */}
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-400 text-white flex items-center justify-center font-extrabold text-xl shadow-glow uppercase select-none">
-            {profile.fullName.slice(0, 2)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-950 dark:text-white">{profile.fullName}</h1>
-              <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-2.5 py-0.5 rounded-full dark:bg-blue-950/40 dark:text-blue-400">
-                O'quvchi
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">{profile.phone} | {profile.email}</p>
-          </div>
-        </div>
-
-        {/* Level & XP progression indicator */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mt-6 lg:mt-0">
-          <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 border border-slate-100 dark:border-slate-800 min-w-[150px]">
-            <div className="flex justify-between text-xs font-bold mb-1">
-              <span className="text-slate-500">Tajriba (XP):</span>
-              <span className="text-blue-600 font-sans tracking-tight">{profile.xp || 0} XP</span>
-            </div>
-            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-600 rounded-full" 
-                style={{ width: `${Math.min(((profile.xp || 0) / 5000) * 100, 100)}%` }} 
-              />
-            </div>
-          </div>
-
-          {onAdminNavigation && (
-            <button
-              onClick={onAdminNavigation}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition duration-150 active:scale-95 shadow-glow cursor-pointer"
-            >
-              🚀 Admin Panel
-            </button>
-          )}
-
-          <button
-            onClick={onLogOut}
-            className="px-5 py-2.5 bg-[#0F172A] hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition duration-150 active:scale-95 shadow-premium cursor-pointer"
-            id="btn-user-logout"
-          >
-            Chiqish (Logout)
-          </button>
-        </div>
-      </div>
-
       {/* Grid Dashboard structure with Sidebar summary stats and Main Workspace Tabs */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
