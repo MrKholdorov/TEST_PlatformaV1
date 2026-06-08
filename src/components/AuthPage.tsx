@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Mail, Lock, Phone, User, LogIn, ArrowRight, Star, AlertCircle } from 'lucide-react';
 import { Profile } from '../types';
 import { LocalDbService } from '../db/localDb';
+import { getTelegramUser, sendAdminNotification } from '../lib/telegramClient';
 
 interface AuthPageProps {
   onAuthSuccess: (user: Profile) => void;
@@ -33,8 +34,41 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     termsAccepted: true
   });
 
-  // Admin direct authentication hook has been re-routed directly through normal login
-  
+  // Check if we have telegram user on mount
+  useEffect(() => {
+    const tgUser = getTelegramUser();
+    if (tgUser) {
+      // Auto login based on telegram id
+      const profiles = LocalDbService.getProfiles();
+      const found = profiles.find(p => p.telegramId === String(tgUser.id));
+      if (found) {
+        if (found.isBlocked) {
+           alert("Akkaunt bloklangan.");
+           return;
+        }
+        
+        const updated = {
+          ...found,
+          lastLogin: new Date().toISOString()
+        };
+        LocalDbService.saveProfile(updated);
+        onAuthSuccess(updated);
+      }
+    }
+  }, []);
+
+  const handleTgRegister = () => {
+    const tgUser = getTelegramUser();
+    if (tgUser) {
+      setRegisterForm({
+        ...registerForm,
+        login: tgUser.username || `user_${tgUser.id}`,
+        fullName: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim(),
+      });
+      setIsLoginMode(false);
+    }
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const profiles = LocalDbService.getProfiles();
@@ -91,15 +125,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       password: registerForm.password, // Save password
       lastLogin: new Date().toISOString(),
       createdAt: new Date().toISOString(),
-      xp: 150 // Initial welcoming score
+      xp: 150, // Initial welcoming score
+      telegramId: getTelegramUser() ? String(getTelegramUser().id) : undefined,
+      telegramUsername: getTelegramUser() ? getTelegramUser().username : undefined
     };
 
     LocalDbService.saveProfile(newUser);
     LocalDbService.addNotification("Xush kelibsiz!", "Platformada muvaffaqiyatli hisob ochildi. Faningizni tanlang va testlarni boshlang!", "success", newUser.id);
     LocalDbService.addLog(newUser.id, newUser.fullName, "Ro'yxatdan o'tish", "Yangi foydalanuvchi muvaffaqiyatli ro'yxatdan o'tdi.");
     
-    // Auto-alert Telegram hook
-    LocalDbService.sendTelegramNotification(`🆕 YANGI FOYDALANUVChI RO'YXATDAN O'TDI!\n\n👤 F.I.SH: ${newUser.fullName}\n📞 Telefon: ${newUser.phone}\n📧 Email: ${newUser.email}`);
+    // Auto-alert Telegram hook for Admin
+    sendAdminNotification(`👤 <b>Yangi foydalanuvchi ro'yxatdan o'tdi</b>\n\n• F.I.SH: <b>${newUser.fullName}</b>\n• Login: <code>${newUser.login}</code>\n• Telefon: ${newUser.phone || 'Kiritilmagan'}\n• Email: ${newUser.email || 'Kiritilmagan'}`);
 
     alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
     onAuthSuccess(newUser);

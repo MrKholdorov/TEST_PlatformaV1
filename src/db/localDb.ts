@@ -631,6 +631,10 @@ export class LocalDbService {
     this.initKey('otp_notifications', SEED_NOTIFICATIONS);
     this.initKey('otp_activity_logs', SEED_LOGS);
     this.initKey('otp_telegram_config', DEFAULT_TG_CONFIG);
+    this.initKey('otp_mistakes', []);
+    this.initKey('otp_achievements', []);
+    this.initKey('otp_user_stats', []);
+    this.initKey('otp_duels', []);
   }
 
   // Generic Getters
@@ -654,7 +658,11 @@ export class LocalDbService {
       otp_rankings: localStorage.getItem('otp_rankings') ? JSON.parse(localStorage.getItem('otp_rankings')!) : [],
       otp_notifications: localStorage.getItem('otp_notifications') ? JSON.parse(localStorage.getItem('otp_notifications')!) : [],
       otp_activity_logs: localStorage.getItem('otp_activity_logs') ? JSON.parse(localStorage.getItem('otp_activity_logs')!) : [],
-      otp_telegram_config: localStorage.getItem('otp_telegram_config') ? JSON.parse(localStorage.getItem('otp_telegram_config')!) : {}
+      otp_telegram_config: localStorage.getItem('otp_telegram_config') ? JSON.parse(localStorage.getItem('otp_telegram_config')!) : {},
+      otp_mistakes: localStorage.getItem('otp_mistakes') ? JSON.parse(localStorage.getItem('otp_mistakes')!) : [],
+      otp_achievements: localStorage.getItem('otp_achievements') ? JSON.parse(localStorage.getItem('otp_achievements')!) : [],
+      otp_user_stats: localStorage.getItem('otp_user_stats') ? JSON.parse(localStorage.getItem('otp_user_stats')!) : [],
+      otp_duels: localStorage.getItem('otp_duels') ? JSON.parse(localStorage.getItem('otp_duels')!) : []
     };
   }
 
@@ -684,6 +692,10 @@ export class LocalDbService {
         await pushBatch(payload.otp_rankings, 'rankings');
         await pushBatch(payload.otp_notifications, 'notifications');
         await pushBatch(payload.otp_activity_logs, 'activity_logs');
+        await pushBatch(payload.otp_mistakes, 'mistakes');
+        await pushBatch(payload.otp_achievements, 'achievements');
+        await pushBatch(payload.otp_user_stats, 'user_stats');
+        await pushBatch(payload.otp_duels, 'duels');
         await setDoc(doc(db, 'config', 'telegram'), payload.otp_telegram_config);
 
         // Mark database as seeded config
@@ -702,7 +714,11 @@ export class LocalDbService {
       { key: 'otp_results', name: 'results' },
       { key: 'otp_rankings', name: 'rankings' },
       { key: 'otp_notifications', name: 'notifications' },
-      { key: 'otp_activity_logs', name: 'activity_logs' }
+      { key: 'otp_activity_logs', name: 'activity_logs' },
+      { key: 'otp_mistakes', name: 'mistakes' },
+      { key: 'otp_achievements', name: 'achievements' },
+      { key: 'otp_user_stats', name: 'user_stats' },
+      { key: 'otp_duels', name: 'duels' }
     ];
 
     collectionsMap.forEach(col => {
@@ -983,6 +999,98 @@ export class LocalDbService {
     // We update local limit to 100
     this.set('otp_activity_logs', logs.slice(0, 100));
     setDoc(doc(db, 'activity_logs', item.id), item).catch(e => console.warn(e));
+  }
+
+  // ---- MISTAKES ----
+  static getMistakes(userId?: string): any[] {
+    const all = this.get<any>('otp_mistakes');
+    return userId ? all.filter(m => m.userId === userId) : all;
+  }
+
+  static saveMistake(mistake: any): void {
+    const items = this.get<any>('otp_mistakes');
+    const idx = items.findIndex(m => m.id === mistake.id || (m.userId === mistake.userId && m.questionId === mistake.questionId));
+    if (idx >= 0) {
+      mistake.timesFailed = (items[idx].timesFailed || 1) + 1;
+      mistake.id = items[idx].id;
+      items[idx] = mistake;
+    } else {
+      mistake.timesFailed = 1;
+      mistake.id = mistake.id || `mistake-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
+      items.push(mistake);
+    }
+    this.set('otp_mistakes', items);
+    setDoc(doc(db, 'mistakes', mistake.id), mistake).catch(e => console.warn(e));
+  }
+
+  static deleteMistake(id: string): void {
+    const items = this.get<any>('otp_mistakes').filter(m => m.id !== id);
+    this.set('otp_mistakes', items);
+    deleteDoc(doc(db, 'mistakes', id)).catch(e => console.warn(e));
+  }
+
+  // ---- ACHIEVEMENTS ----
+  static getAchievements(userId?: string): any[] {
+    const all = this.get<any>('otp_achievements');
+    return userId ? all.filter(a => a.userId === userId) : all;
+  }
+
+  static saveAchievement(achievement: any): void {
+    const items = this.get<any>('otp_achievements');
+    const existing = items.find(a => a.userId === achievement.userId && a.type === achievement.type);
+    if (!existing) {
+      items.push(achievement);
+      this.set('otp_achievements', items);
+      setDoc(doc(db, 'achievements', achievement.id), achievement).catch(e => console.warn(e));
+    }
+  }
+
+  // ---- USER STATS ----
+  static getUserStats(userId: string): any {
+    const stats = this.get<any>('otp_user_stats').find(s => s.userId === userId);
+    return stats || {
+      userId,
+      totalTests: 0,
+      totalDuels: 0,
+      duelWins: 0,
+      duelLosses: 0,
+      duelDraws: 0,
+      duelElo: 1000,
+      averageScorePercentage: 0
+    };
+  }
+
+  static saveUserStats(stats: any): void {
+    const items = this.get<any>('otp_user_stats');
+    const idx = items.findIndex(s => s.userId === stats.userId);
+    if (idx >= 0) {
+      items[idx] = stats;
+    } else {
+      items.push(stats);
+    }
+    this.set('otp_user_stats', items);
+    setDoc(doc(db, 'user_stats', stats.userId), stats).catch(e => console.warn(e));
+  }
+
+  // ---- DUELS ----
+  static getDuels(): any[] {
+    return this.get<any>('otp_duels');
+  }
+
+  static getDuel(id: string): any {
+    return this.getDuels().find(d => d.id === id || d.code === id);
+  }
+
+  static saveDuel(duel: any): void {
+    const items = this.getDuels();
+    const idx = items.findIndex(d => d.id === duel.id);
+    if (idx >= 0) {
+      items[idx] = duel;
+    } else {
+      items.push(duel);
+    }
+    this.set('otp_duels', items);
+    setDoc(doc(db, 'duels', duel.id), duel).catch(e => console.warn(e));
   }
 
   // Telegram Configuration

@@ -121,6 +121,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
+  .tg-mini-app {
+    background-color: var(--tg-theme-bg-color, #F8FAFC);
+    color: var(--tg-theme-text-color, #0F172A);
+  }
+  .tg-mini-app body {
+    background-color: transparent !important;
+  }
+  
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display), "Outfit", sans-serif;
     letter-spacing: -0.025em;

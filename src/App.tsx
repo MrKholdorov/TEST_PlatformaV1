@@ -11,6 +11,8 @@ import {
 
 import { Profile, Subject, TestSession, TestResult } from './types';
 import { LocalDbService } from './db/localDb';
+import { evaluateMistakes, updateUserStats, evaluateAchievements } from './lib/gameLogic';
+import { sendTelegramNotification, sendAdminNotification } from './lib/telegramClient';
 
 // Modular Component imports
 import { AuthPage } from './components/AuthPage';
@@ -19,6 +21,15 @@ import { QuizEngine } from './components/QuizEngine';
 import { AdminPanel } from './components/AdminPanel';
 import { ContactView } from './components/ContactView';
 import { Certificate } from './components/Certificate';
+import { UserProfileDropdown } from './components/UserProfileDropdown';
+import { ProfilePage } from './components/ProfilePage';
+import { MistakesView } from './components/MistakesView';
+import { AchievementsView } from './components/AchievementsView';
+import { StatisticsView } from './components/StatisticsView';
+import { AIMentorView } from './components/AIMentorView';
+import { DuelsView } from './components/DuelsView';
+
+import { isTelegramMiniApp } from './lib/telegramClient';
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -32,7 +43,7 @@ export default function App() {
   const [showCertificateModal, setShowCertificateModal] = useState<boolean>(false);
 
   // Router views
-  const [activeView, setActiveView] = useState<'dashboard' | 'contact' | 'quiz' | 'result'>('dashboard');
+  const [activeView, setActiveView] = useState<string>('dashboard');
 
   // Load theme and previous user/admin session if active
   useEffect(() => {
@@ -178,6 +189,47 @@ export default function App() {
 
     LocalDbService.saveResult(newResult);
 
+    // Check if new record for Admin notification
+    const previousResults = LocalDbService.getResults().filter(r => r.userId === currentUser.id && r.id !== newResult.id);
+    const hasBetter = previousResults.some(r => r.percentageScore >= percentage);
+    const isNewRecord = !hasBetter && percentage > 0;
+    if (isNewRecord) {
+      sendAdminNotification(`🏆 <b>Yangi rekord natija!</b>\n\n• O'quvchi: <b>${currentUser.fullName}</b>\n• Fan: <b>${activeSubject.name}</b>\n• Natija: <b>${percentage}%</b> (${score}/${activeSession.testType} ta to'g'ri)\n• Vaqt: ${formats(durationSeconds)}`);
+    }
+
+    const sessionQuestions = LocalDbService.getQuestions().filter(q => q.subjectId === activeSubject.id);
+    const mistakes = evaluateMistakes(activeSession, sessionQuestions);
+    mistakes.forEach(m => LocalDbService.saveMistake(m));
+
+    const stats = updateUserStats(currentUser.id, false, false, false, percentage);
+    const newlyUnlocked = evaluateAchievements(currentUser.id, stats, newResult);
+
+    if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach(ach => {
+        LocalDbService.addNotification('🏆 Yangi yutuq!', `Tabriklaymiz! Siz yangi "${ach.type}" yutug'iga erishdingiz.`, 'success', currentUser.id);
+        
+        if (currentUser.telegramId) {
+          sendTelegramNotification(currentUser.telegramId, `🏆 <b>Tabriklaymiz!</b>\n\nYangi yutuq qo'lga kiritildi: <b>${ach.type}</b>\n\nDavom eting!`);
+        }
+      });
+    }
+    
+    if (currentUser.telegramId) {
+      const msg = `📝 <b>Test yakunlandi!</b>\n\n📚 Fan: ${activeSubject.name}\n📝 Test turi: ${activeSubject.totalQuestions} talik\n✅ To'g'ri javoblar: ${score}\n❌ Noto'g'ri javoblar: ${activeSubject.totalQuestions - score}\n📊 Natija: ${percentage}%\n⏱ Sarflangan vaqt: ${formats(durationSeconds)}\n\n<i>Platforma orqali natijani to'liq tahlil qilishingiz mumkin.</i>`;
+      sendTelegramNotification(currentUser.telegramId, msg);
+      
+      // Request auto-mentor analysis for telegram
+      fetch('/api/ai/mentor/auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          telegramId: currentUser.telegramId, 
+          results: LocalDbService.getResults().filter(r => r.userId === currentUser.id),
+          mistakes: LocalDbService.getMistakes(currentUser.id)
+        })
+      }).catch(()=>{});
+    }
+
     // Boost XP score of student for completing tests
     const updatedUser = {
       ...currentUser,
@@ -231,7 +283,7 @@ export default function App() {
           {/* Links menu elements */}
           {activeView !== 'quiz' && (
             <div className="flex items-center gap-4">
-              <nav className="hidden sm:flex items-center gap-2 font-sans tracking-tight text-xs">
+              <nav className="hidden sm:flex items-center gap-2 font-sans tracking-tight text-xs mr-4">
                 <button
                   onClick={() => setActiveView('dashboard')}
                   className={`px-3.5 py-2 rounded-xl transition ${activeView === 'dashboard' ? 'bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800'}`}
@@ -246,23 +298,23 @@ export default function App() {
                 </button>
               </nav>
 
-              {/* Theme selector + session tags */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleToggleTheme}
-                  className="p-2 border border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 rounded-xl transition duration-150 text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer shrink-0"
-                  id="btn-theme-toggle"
-                >
-                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-                </button>
+              {/* Status bar Admin login alert */}
+              {adminEmail && (
+                <span className="bg-amber-100 text-amber-800 font-sans tracking-tight text-[9px] font-bold px-2 py-1 rounded hidden sm:inline-block mr-2">
+                  🔐 ADMIN FAOL
+                </span>
+              )}
 
-                {/* Status bar Admin login alert */}
-                {adminEmail && (
-                  <span className="bg-amber-100 text-amber-800 font-sans tracking-tight text-[9px] font-bold px-2 py-1 rounded hidden sm:inline-block">
-                    🔐 ADMIN FAOL
-                  </span>
-                )}
-              </div>
+              {/* User Profile Dropdown */}
+              {currentUser && (
+                <UserProfileDropdown
+                  currentUser={currentUser}
+                  theme={theme}
+                  onToggleTheme={handleToggleTheme}
+                  onLogout={handleLogOut}
+                  onNavigate={setActiveView}
+                />
+              )}
             </div>
           )}
 
@@ -393,6 +445,17 @@ export default function App() {
           // If Admin email is validated, load full administrative console dashboard
           if (adminEmail) {
             return <AdminPanel onLogOut={handleLogOut} onBackToUser={handleBackToUser} currentUser={currentUser} />;
+          }
+
+          // Additional Views from Dropdown
+          if (currentUser) {
+            if (activeView === 'profile') return <ProfilePage currentUser={currentUser} onNavigate={setActiveView} />;
+            if (activeView === 'mistakes') return <MistakesView currentUser={currentUser} />;
+            if (activeView === 'achievements') return <AchievementsView currentUser={currentUser} />;
+            if (activeView === 'statistics') return <StatisticsView currentUser={currentUser} />;
+            if (activeView === 'duels') return <DuelsView currentUser={currentUser} onNavigate={setActiveView} />;
+            if (activeView === 'mentor') return <AIMentorView currentUser={currentUser} />;
+            if (activeView === 'settings') return <div className="p-8 text-center"><h1 className="text-2xl font-bold">Sozlamalar (Tez kunda)</h1></div>;
           }
 
           // If registered user is logged in, show User Main Dashboard

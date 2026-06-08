@@ -12,6 +12,7 @@ import { Subject, Question, Profile, TestResult, TelegramConfig } from '../types
 import { LocalDbService } from '../db/localDb';
 import { AdminEmulatorConsole } from './AdminEmulatorConsole';
 import { DynamicIcon } from './DynamicIcon';
+import { sendAdminNotification } from '../lib/telegramClient';
 
 interface AdminPanelProps {
   onLogOut: () => void;
@@ -108,6 +109,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
     setTgConfig(LocalDbService.getTelegramConfig());
   };
 
+  const sendDailyReportToTelegram = async () => {
+    try {
+      const allUsers = LocalDbService.getProfiles();
+      const allResults = LocalDbService.getResults();
+      const allDuels = LocalDbService.getDuels();
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const usersToday = allUsers.filter(u => u.createdAt?.startsWith(todayStr)).length;
+      const resultsToday = allResults.filter(r => r.createdAt?.startsWith(todayStr));
+      const duelsToday = allDuels.filter(d => d.createdAt?.startsWith(todayStr) || d.finishedAt?.startsWith(todayStr));
+
+      const avgScore = resultsToday.length > 0 
+        ? Math.round(resultsToday.reduce((sum, r) => sum + r.percentageScore, 0) / resultsToday.length)
+        : 0;
+
+      const reportMsg = `📊 <b>Kunlik statistika tayyor</b>\n\n• Sana: <b>${todayStr}</b>\n• Yangi a'zolar: <b>+${usersToday} ta</b>\n• Topshirilgan testlar: <b>${resultsToday.length} ta</b> (O'rtacha natija: <b>${avgScore}%</b>)\n• Yakunlangan duellar: <b>${duelsToday.filter(d => d.status === 'finished').length} ta</b>\n• Jami foydalanuvchilar soni: <b>${allUsers.length} ta</b>\n\n<i>Boshqaruv Ofisi tomonidan avtomatik tayyorlandi.</i>`;
+      
+      await sendAdminNotification(reportMsg);
+      alert("Kunlik statistika hisoboti Telegramga muvaffaqiyatli yuborildi!");
+    } catch (e) {
+      console.error(e);
+      alert("Hisobotni yuborishda xatolik!");
+    }
+  };
+
+  const sendWeeklyReportToTelegram = async () => {
+    try {
+      const allUsers = LocalDbService.getProfiles();
+      const allResults = LocalDbService.getResults();
+      const allDuels = LocalDbService.getDuels();
+      
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const resultsThisWeek = allResults.filter(r => new Date(r.createdAt).getTime() > oneWeekAgo);
+      const duelsThisWeek = allDuels.filter(d => new Date(d.createdAt || d.finishedAt || Date.now()).getTime() > oneWeekAgo);
+      const usersThisWeek = allUsers.filter(u => u.createdAt && new Date(u.createdAt).getTime() > oneWeekAgo).length;
+
+      const avgScore = resultsThisWeek.length > 0 
+        ? Math.round(resultsThisWeek.reduce((sum, r) => sum + r.percentageScore, 0) / resultsThisWeek.length)
+        : 0;
+
+      const reportMsg = `📈 <b>Haftalik statistika tayyor</b>\n\n• Davr: <b>Oxirgi 7 kun</b>\n• Yangi qo'shilganlar: <b>+${usersThisWeek} ta</b>\n• Topshirilgan testlar soni: <b>${resultsThisWeek.length} ta</b>\n• O'rtacha o'zlashtirish: <b>${avgScore}%</b>\n• O'tkazilgan jami duellar: <b>${duelsThisWeek.length} ta</b>\n\n<i>Boshqaruv Ofisi tomonidan haftalik tizim auditi.</i>`;
+      
+      await sendAdminNotification(reportMsg);
+      alert("Haftalik statistika hisoboti Telegramga muvaffaqiyatli yuborildi!");
+    } catch (e) {
+      console.error(e);
+      alert("Haftalik hisobotni yuborishda xatolik!");
+    }
+  };
+
   // Create or Update Subject Action
   const handleSaveSubject = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,14 +176,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
       }
       setEditSubjId(null);
     } else {
-      LocalDbService.saveSubject({
+      const createdSubject = {
         id: `subj-${Date.now()}`,
         name: newSubj.name,
         icon: newSubj.icon,
         description: newSubj.description,
         totalQuestions: 0,
         progress: 0
-      });
+      };
+      LocalDbService.saveSubject(createdSubject);
+      
+      // Notify Admin
+      sendAdminNotification(`📚 <b>Yangi fan qo'shildi!</b>\n\n• Fan nomi: <b>${createdSubject.name}</b>\n• Tavsif: <i>${createdSubject.description || 'Kiritilmagan'}</i>`);
     }
 
     setNewSubj({ name: '', icon: 'BookOpen', description: '' });
@@ -440,6 +495,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, 
           {/* MENU: Admin Dashboard (Logs list / statistics) */}
           {activeMenu === 'dashboard' && (
             <div className="space-y-6 animate-scale-up">
+              {/* Telegram Reports Panel */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-premium text-left">
+                <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                  <span className="text-xl">📊</span>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white font-sans tracking-tight">TELEGRAM STATISTIK BILDIRISHNOMALARI</h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Tizim holati va faolligi haqida hisobotlarni Telegram botga yuborish</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button 
+                    onClick={sendDailyReportToTelegram}
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-xl transition hover:opacity-95 shadow-md active:scale-95 cursor-pointer"
+                  >
+                    📊 Kunlik statistika yuborish
+                  </button>
+                  <button 
+                    onClick={sendWeeklyReportToTelegram}
+                    className="flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl transition hover:opacity-95 shadow-md active:scale-95 cursor-pointer"
+                  >
+                    📈 Haftalik statistika yuborish
+                  </button>
+                </div>
+              </div>
+
               {/* Daily system Logs representation */}
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-premium text-left">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">

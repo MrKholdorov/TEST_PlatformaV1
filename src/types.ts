@@ -15,6 +15,8 @@ export interface Profile {
   xp: number;
   isBlocked?: boolean; // Tizimga kirishni cheklash
   role?: 'admin' | 'moderator' | 'user';
+  telegramId?: string;
+  telegramUsername?: string;
 }
 
 export interface Subject {
@@ -111,4 +113,74 @@ export interface TelegramConfig {
   botToken: string;
   chatId: string;
   notificationsEnabled: boolean;
+}
+
+export interface Mistake {
+  id: string;
+  userId: string;
+  questionId: string;
+  questionText: string;
+  subjectId: string;
+  subjectName: string;
+  options: Record<string, string>;
+  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  selectedAnswer: string;
+  createdAt: string;
+  isCorrected: boolean;
+  timesFailed: number;
+}
+
+export interface DuelPlayer {
+  userId: string;
+  fullName: string;
+  ready: boolean;
+  score: number;
+  answersCount: number;
+  timeSpentSecs: number;
+  joinedAt: string;
+  completedAt?: string;
+  answers: Record<string, 'A' | 'B' | 'C' | 'D'>;
+}
+
+export interface Duel {
+  id: string;
+  code: string;
+  subjectId: string;
+  subjectName: string;
+  testType: number;
+  status: 'waiting' | 'starting' | 'active' | 'finished';
+  players: Record<string, DuelPlayer>;
+  questionsCount: number;
+  questionIds: string[];
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  winnerId?: string;
+  endTime?: string;
+}
+
+export interface Achievement {
+  id: string;
+  userId: string;
+  type: string; // e.g., 'first_test', '10_tests', 'accuracy_master'...
+  unlockedAt: string;
+}
+
+export interface UserStats {
+  userId: string;
+  totalTests: number;
+  totalDuels: number;
+  duelWins: number;
+  duelLosses: number;
+  duelDraws: number;
+  duelElo: number; // ELO Rating
+  averageScorePercentage: number;
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: any;
+    };
+  }
 }
