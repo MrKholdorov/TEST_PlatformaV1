@@ -15,9 +15,11 @@ import { DynamicIcon } from './DynamicIcon';
 
 interface AdminPanelProps {
   onLogOut: () => void;
+  onBackToUser?: () => void;
+  currentUser?: Profile | null;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut, onBackToUser, currentUser }) => {
   const [activeMenu, setActiveMenu] = useState<string>('dashboard');
   
   // Stats
@@ -233,12 +235,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
     alert(`O'quvchi "${user.fullName}" holati muvaffaqiyatli daxldor bo'ldi! Hozirgi holat: ${updated.isBlocked ? "BLOKLANGAN (Kirish cheklangan)" : "FAQOL"}`);
   };
 
+  const handleDeleteUser = (user: Profile) => {
+    if (confirm(`Rostdan ham "${user.fullName}" o'quvchisini tizimdan butunlay o'chirib yubormoqchimisiz? (Barcha unga tegishli imtihon tarixlari ham saqlanib qolmaydi!)`)) {
+      LocalDbService.deleteProfile(user.id);
+      setSelectedAuditUser(null);
+      loadData();
+      alert("O'quvchi tizimdan muvaffaqiyatli o'chirib yuborildi!");
+    }
+  };
+
   const handleUpdateUserCredentials = (e: React.FormEvent, user: Profile) => {
     e.preventDefault();
+    const fullNameInput = (e.currentTarget.querySelector('#edit-user-fullname-input') as HTMLInputElement)?.value.trim();
     const loginInput = (e.currentTarget.querySelector('#edit-user-login-input') as HTMLInputElement)?.value.trim();
     const pwdInput = (e.currentTarget.querySelector('#edit-user-pwd-input') as HTMLInputElement)?.value.trim();
+    const roleInput = (e.currentTarget.querySelector('#edit-user-role-input') as HTMLSelectElement)?.value;
 
-    if (!loginInput || !pwdInput) {
+    if (!fullNameInput || !loginInput || !pwdInput) {
       alert("Xatolik: maydonlar bo'sh bo'lishi mumkin emas!");
       return;
     }
@@ -249,15 +262,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
       return;
     }
 
-    const updated = {
+    const updated: Profile = {
       ...user,
+      fullName: fullNameInput,
       login: loginInput,
-      password: pwdInput
+      password: pwdInput,
+      role: roleInput as any
     };
     LocalDbService.saveProfile(updated);
     setSelectedAuditUser(updated);
     loadData();
-    alert(`Muvaffaqiyatli yangilandi!\n\nUnikal Login: ${loginInput}\nYangi Parol: ${pwdInput}`);
+    alert(`Muvaffaqiyatli yangilandi!\n\nIsm: ${fullNameInput}\nUnikal Login: ${loginInput}\nYangi Parol: ${pwdInput}`);
   };
 
   // Bulk Import Action
@@ -310,13 +325,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
           </p>
         </div>
 
-        <button
-          onClick={onLogOut}
-          className="bg-red-656 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl text-xs transition duration-150 active:scale-95 shadow-premium cursor-pointer z-10"
-          id="btn-admin-logout"
-        >
-          Admin Chiqish (Log Out)
-        </button>
+        <div className="flex items-center gap-3 z-10">
+          {onBackToUser && (
+            <button
+              onClick={onBackToUser}
+              className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold py-3 px-4 rounded-xl text-xs transition duration-150 active:scale-95 shadow-premium cursor-pointer"
+            >
+              O'quvchi paneliga qaytish
+            </button>
+          )}
+          <button
+            onClick={onLogOut}
+            className="bg-red-656 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl text-xs transition duration-150 active:scale-95 shadow-premium cursor-pointer"
+            id="btn-admin-logout"
+          >
+            Admin Chiqish (Log Out)
+          </button>
+        </div>
       </div>
 
       {/* Stripe-like high precision metrics cards */}
@@ -350,14 +375,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onLogOut }) => {
         <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-premium space-y-1">
           <h3 className="font-bold text-[10px] text-slate-400 tracking-widest uppercase px-3 pb-3 border-b border-slate-50 dark:border-slate-800 mb-2">MULOQOT MENYULARI</h3>
           {[
-            { id: 'dashboard', label: '📊 Admin Dashboard' },
-            { id: 'subjects', label: '📚 Fanlarni tuzatish' },
-            { id: 'questions', label: '❓ Savollar drayveri' },
-            { id: 'import', label: '📥 Ommaviy Import' },
-            { id: 'users', label: '👥 O\'quvchilar Analizi' },
-            { id: 'db_console', label: '🗄️ Postgres Server' },
-            { id: 'telegram', label: '🔔 Telegram Shlyuzi' }
-          ].map(menu => (
+            { id: 'dashboard', label: '📊 Admin Dashboard', adminOnly: false },
+            { id: 'subjects', label: '📚 Fanlarni tuzatish', adminOnly: false },
+            { id: 'questions', label: '❓ Savollar drayveri', adminOnly: false },
+            { id: 'import', label: '📥 Ommaviy Import', adminOnly: false },
+            { id: 'users', label: '👥 O\'quvchilar Analizi', adminOnly: true },
+            { id: 'db_console', label: '🗄️ Postgres Server', adminOnly: true },
+            { id: 'telegram', label: '🔔 Telegram Shlyuzi', adminOnly: true }
+          ].filter(m => {
+            const isAdmin = !currentUser || currentUser.role === 'admin' || currentUser.email === 'xusniddinku@gmail.com';
+            return !m.adminOnly || isAdmin;
+          }).map(menu => (
             <button
               key={menu.id}
               onClick={() => setActiveMenu(menu.id)}
@@ -837,7 +865,18 @@ Javob: B"
                         </div>
 
                         {/* Inline credentials changer */}
-                        <form onSubmit={(e) => handleUpdateUserCredentials(e, selectedAuditUser)} className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                        <form onSubmit={(e) => handleUpdateUserCredentials(e, selectedAuditUser)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 text-xs">
+                          <div>
+                            <label className="block text-[10px] text-slate-400 font-bold mb-1">To'liq ism (F.I.SH):</label>
+                            <input
+                              type="text"
+                              required
+                              id="edit-user-fullname-input"
+                              key={`fn-${selectedAuditUser.id}-${selectedAuditUser.fullName}`}
+                              defaultValue={selectedAuditUser.fullName}
+                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-sans tracking-tight"
+                            />
+                          </div>
                           <div>
                             <label className="block text-[10px] text-slate-400 font-bold mb-1">Unikal Kirish Logini:</label>
                             <input
@@ -849,7 +888,7 @@ Javob: B"
                               className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-sans tracking-tight"
                             />
                           </div>
-                          <div>
+                          <div className="sm:col-span-2 lg:col-span-1">
                             <label className="block text-[10px] text-slate-400 font-bold mb-1">Yangi Kirish Paroli:</label>
                             <input
                               type="text"
@@ -860,12 +899,31 @@ Javob: B"
                               className="w-full px-3 py-1.5 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-sans tracking-tight"
                             />
                           </div>
-                          <div className="sm:col-span-2 text-right">
+                          <div className="sm:col-span-2 lg:col-span-3">
+                            <label className="block text-[10px] text-slate-400 font-bold mb-1">Foydalanuvchi huquqi (Role):</label>
+                            <select
+                              id="edit-user-role-input"
+                              key={`role-${selectedAuditUser.id}-${selectedAuditUser.role || 'user'}`}
+                              defaultValue={selectedAuditUser.role || "user"}
+                              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-850 dark:bg-slate-950 rounded-lg text-slate-900 dark:text-white font-sans tracking-tight cursor-pointer"
+                            >
+                              <option value="user">O'quvchi (Faqat test topshiradi)</option>
+                              <option value="moderator">Moderator (Testlar qo'shishi mumkin)</option>
+                            </select>
+                          </div>
+                          <div className="sm:col-span-2 lg:col-span-3 flex justify-between items-center mt-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(selectedAuditUser)}
+                              className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/50 font-bold rounded-lg cursor-pointer transition text-[10px]"
+                            >
+                              Foydalanuvchini O'chirish
+                            </button>
                             <button
                               type="submit"
-                              className="px-4 py-1.5 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer transition text-[10px]"
+                              className="px-4 py-2 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer transition text-[10px]"
                             >
-                              Profil Ma'lumotlarini Yangilash
+                              Profilni Yangilash
                             </button>
                           </div>
                         </form>

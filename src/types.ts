@@ -14,6 +14,7 @@ export interface Profile {
   createdAt: string;
   xp: number;
   isBlocked?: boolean; // Tizimga kirishni cheklash
+  role?: 'admin' | 'moderator' | 'user';
 }
 
 export interface Subject {

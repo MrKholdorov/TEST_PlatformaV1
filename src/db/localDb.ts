@@ -722,6 +722,11 @@ export class LocalDbService {
     return this.get<Profile>('otp_profiles');
   }
 
+  static deleteProfile(id: string): void {
+    const profiles = this.getProfiles();
+    this.set('otp_profiles', profiles.filter(p => p.id !== id));
+  }
+
   static saveProfile(profile: Profile): void {
     const profiles = this.getProfiles();
     const index = profiles.findIndex(p => p.id === profile.id);

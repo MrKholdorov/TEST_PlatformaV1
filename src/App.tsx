@@ -99,9 +99,12 @@ export default function App() {
   const handleAdminAuthSuccess = (email: string) => {
     setAdminEmail(email);
     localStorage.setItem('otp_active_admin', email);
-    // Unset user to avoid layouts overlays clashes
-    setCurrentUser(null);
-    localStorage.removeItem('otp_active_user');
+    setActiveView('dashboard');
+  };
+
+  const handleBackToUser = () => {
+    setAdminEmail(null);
+    localStorage.removeItem('otp_active_admin');
     setActiveView('dashboard');
   };
 
@@ -389,7 +392,7 @@ export default function App() {
 
           // If Admin email is validated, load full administrative console dashboard
           if (adminEmail) {
-            return <AdminPanel onLogOut={handleLogOut} />;
+            return <AdminPanel onLogOut={handleLogOut} onBackToUser={handleBackToUser} currentUser={currentUser} />;
           }
 
           // If registered user is logged in, show User Main Dashboard
@@ -399,7 +402,7 @@ export default function App() {
                 profile={currentUser}
                 onStartExam={handleStartExam}
                 onLogOut={handleLogOut}
-                onAdminNavigation={currentUser.email === 'xusniddinku@gmail.com' ? () => handleAdminAuthSuccess(currentUser.email) : undefined}
+                onAdminNavigation={(currentUser.role === 'admin' || currentUser.role === 'moderator' || currentUser.email === 'xusniddinku@gmail.com') ? () => handleAdminAuthSuccess(currentUser.email) : undefined}
               />
             );
           }
