@@ -18,6 +18,7 @@ import { UserDashboard } from './components/UserDashboard';
 import { QuizEngine } from './components/QuizEngine';
 import { AdminPanel } from './components/AdminPanel';
 import { ContactView } from './components/ContactView';
+import { Certificate } from './components/Certificate';
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -28,6 +29,7 @@ export default function App() {
   const [activeSession, setActiveSession] = useState<TestSession | null>(null);
   const [activeSubject, setActiveSubject] = useState<Subject | null>(null);
   const [currentResult, setCurrentResult] = useState<TestResult | null>(null);
+  const [showCertificateModal, setShowCertificateModal] = useState<boolean>(false);
 
   // Router views
   const [activeView, setActiveView] = useState<'dashboard' | 'contact' | 'quiz' | 'result'>('dashboard');
@@ -324,7 +326,16 @@ export default function App() {
                   {/* Warning banner of score passing indicator */}
                   {currentResult.percentageScore >= 60 ? (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-400 text-xs py-3 px-4 rounded-xl leading-relaxed">
-                      Tabriklaymiz! Siz fandan <b>sertifikat</b> olish chegarasini topshirdingiz (chegara: 60%). Shaxsiy profilingiz orqali sertifikat yuklab olishingiz mumkin.
+                      Tabriklaymiz! Siz fandan <b>sertifikat</b> olish chegarasini topshirdingiz (chegara: 60%).<br/>
+                      <button
+                        onClick={() => {
+                          setShowCertificateModal(true);
+                        }}
+                        className="mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition duration-150 shadow-glow active:scale-95 text-xs inline-flex items-center gap-2"
+                      >
+                        <Award size={16} />
+                        PDF Sertifikatni Ko'rish va Yuklab Olish
+                      </button>
                     </div>
                   ) : (
                     <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-400 text-xs py-3 px-4 rounded-xl leading-relaxed">
@@ -343,6 +354,30 @@ export default function App() {
                     Mening Dashboardga qaytish
                   </button>
                 </div>
+                
+                {/* MODAL Popup for Certificate viewer in active result tree */}
+                {showCertificateModal && currentUser && (
+                  <div className="fixed inset-0 z-50 bg-[#000000]/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="relative w-full max-w-4xl my-8 text-left">
+                      {/* Close button */}
+                      <button
+                        onClick={() => setShowCertificateModal(false)}
+                        className="absolute -top-12 right-0 bg-[#0F172A] hover:bg-slate-800 text-white p-2.5 rounded-xl shadow-premium cursor-pointer"
+                      >
+                        Yopish (X)
+                      </button>
+                      
+                      <Certificate
+                        fullName={currentUser.fullName}
+                        subjectName={currentResult.subjectName}
+                        percentage={currentResult.percentageScore}
+                        testType={currentResult.testType}
+                        date={new Date(currentResult.createdAt).toLocaleDateString()}
+                        certificateNumber={currentResult.id.toUpperCase().replace('RES-', 'CERT-').substring(0, 14)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           }

@@ -163,7 +163,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <button
               onClick={() => {
                 setIsLoginMode(false);
-                setAccessDeniedMessage(false);
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition duration-150 cursor-pointer ${!isLoginMode ? 'bg-[#0F172A] text-white dark:bg-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
             >
