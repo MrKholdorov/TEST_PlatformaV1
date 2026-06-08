@@ -18,12 +18,14 @@ interface UserDashboardProps {
   profile: Profile;
   onStartExam: (subjectId: string, testType: 20 | 30 | 50 | 100) => void;
   onLogOut: () => void;
+  onAdminNavigation?: () => void;
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({
   profile,
   onStartExam,
-  onLogOut
+  onLogOut,
+  onAdminNavigation
 }) => {
   const [activeTab, setActiveTab] = useState<string>('subjects');
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -44,6 +46,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Online robust polling sync to refresh UI continuously matching server background fetches
+    const intv = setInterval(() => {
+      loadDashboardData();
+    }, 5000);
+    return () => clearInterval(intv);
   }, [profile.id, activeTab, leaderboardType]);
 
   const loadDashboardData = () => {
@@ -184,7 +192,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         </div>
 
         {/* Level & XP progression indicator */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mt-6 lg:mt-0">
           <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 border border-slate-100 dark:border-slate-800 min-w-[150px]">
             <div className="flex justify-between text-xs font-bold mb-1">
               <span className="text-slate-500">Tajriba (XP):</span>
@@ -197,6 +205,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               />
             </div>
           </div>
+
+          {onAdminNavigation && (
+            <button
+              onClick={onAdminNavigation}
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition duration-150 active:scale-95 shadow-glow cursor-pointer"
+            >
+              🚀 Admin Panel
+            </button>
+          )}
 
           <button
             onClick={onLogOut}

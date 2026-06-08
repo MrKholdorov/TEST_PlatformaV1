@@ -53,6 +53,14 @@ export default function App() {
       if (savedAdmin) {
         setAdminEmail(savedAdmin);
       }
+
+      // Online real-time automatic synchronization
+      setInterval(async () => {
+        const hasPendingSync = !!(window as any).__pendingDbSync;
+        if (!hasPendingSync) {
+          await LocalDbService.syncWithBackend();
+        }
+      }, 5000);
     };
 
     bootDbAndSync();
@@ -85,7 +93,7 @@ export default function App() {
     setActiveView('dashboard');
   };
 
-  // Administrative Google auth triggers
+  // Administrative auth triggers
   const handleAdminAuthSuccess = (email: string) => {
     setAdminEmail(email);
     localStorage.setItem('otp_active_admin', email);
@@ -356,6 +364,7 @@ export default function App() {
                 profile={currentUser}
                 onStartExam={handleStartExam}
                 onLogOut={handleLogOut}
+                onAdminNavigation={currentUser.email === 'xusniddinku@gmail.com' ? () => handleAdminAuthSuccess(currentUser.email) : undefined}
               />
             );
           }

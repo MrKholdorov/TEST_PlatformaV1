@@ -33,11 +33,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     termsAccepted: true
   });
 
-  // Google OAuth modal emulator state
-  const [showGoogleModal, setShowGoogleModal] = useState<boolean>(false);
-  const [googleEmailInput, setGoogleEmailInput] = useState<string>('xusniddinku@gmail.com');
-  const [accessDeniedMessage, setAccessDeniedMessage] = useState<boolean>(false);
-
+  // Admin direct authentication hook has been re-routed directly through normal login
+  
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const profiles = LocalDbService.getProfiles();
@@ -106,21 +103,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
     onAuthSuccess(newUser);
-  };
-
-  const handleGoogleOAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = googleEmailInput.trim().toLowerCase();
-
-    // Restrict Admin email access strictly to xusniddinku@gmail.com
-    if (email === 'xusniddinku@gmail.com') {
-      setShowGoogleModal(false);
-      setAccessDeniedMessage(false);
-      alert("Google Admin tasdiqlandi! Admin panelga xush kelibsiz.");
-      onAdminAuthSuccess(email);
-    } else {
-      setAccessDeniedMessage(true);
-    }
   };
 
   return (
@@ -330,91 +312,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               <span className="w-full border-t border-slate-250 dark:border-slate-800" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white dark:bg-slate-900 px-3 text-slate-405 text-slate-400 font-bold">ADMINISTRATOR TIZIMI</span>
+              <span className="bg-white dark:bg-slate-900 px-3 text-slate-405 text-slate-400 font-bold">FAqat ro'yxatdan o'tganlar uchun</span>
             </div>
           </div>
-
-          {/* Secondary Admin Google OAuth Action */}
-          <button
-            onClick={() => {
-              setAccessDeniedMessage(false);
-              setShowGoogleModal(true);
-            }}
-            className="w-full border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
-            id="btn-google-oauth-launch"
-          >
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M12.24 10.285V13.4h6.887C18.2 15.614 15.645 18 12.24 18c-3.86 0-7-3.14-7-7s3.14-7 7-7c1.71 0 3.275.61 4.5 1.625l2.437-2.437C17.312 1.696 14.933 1 12.24 1 6.58 1 2 5.58 2 11.24s4.58 10.24 10.24 10.24c5.9 0 9.802-4.15 9.802-9.973 0-.6-.051-1.185-.152-1.74l-9.65-.002z" />
-            </svg>
-            Google OAuth orqali kirish (Admin)
-          </button>
         </div>
       </div>
-
-      {/* ADMIN GOOGLE OAUTH POPUP MODAL */}
-      {showGoogleModal && (
-        <div className="fixed inset-0 z-50 bg-[#000000]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-premium text-left animate-scale-up space-y-4">
-            
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <ShieldCheck className="text-blue-600" size={20} />
-                  Google Sign-In Console
-                </h3>
-                <p className="text-xs text-slate-400">Google OAuth 2.0 sertifikatlangan tasdiq xizmati</p>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowGoogleModal(false);
-                  setAccessDeniedMessage(false);
-                }} 
-                className="text-slate-400 hover:text-slate-600 font-bold"
-              >
-                X
-              </button>
-            </div>
-
-            <form onSubmit={handleGoogleOAuthSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Elektron pochta (Google Email)</label>
-                <input
-                  type="email"
-                  required
-                  value={googleEmailInput}
-                  onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono"
-                  placeholder="Masalan: xusniddinku@gmail.com"
-                />
-              </div>
-
-              {/* Ruxsat berilmagan warning banner */}
-              {accessDeniedMessage && (
-                <div className="flex gap-2 items-start bg-red-50 text-red-700 border border-red-150 p-3 rounded-xl dark:bg-red-950/40 dark:text-red-400 dark:border-red-900 animate-pulse">
-                  <AlertCircle size={18} className="shrink-0 text-red-500 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold">Ruxsat berilmagan</h4>
-                    <p className="text-[10px] mt-0.5 leading-relaxed">
-                      Siz kiritgan elektron pochta administrator ruxsatiga ega emas! Ushbu tizim faqat <b>xusniddinku@gmail.com</b> uchun cheklangan.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition duration-150 shadow-glow flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
-              >
-                Profilni Tasdiqlash
-              </button>
-            </form>
-
-            <span className="block text-[10px] text-slate-400 leading-normal border-t border-slate-100 dark:border-slate-900 pt-3">
-              Hisob orqali davom etish Google OAuth API shaxsiy xavfsizlik va cookies talablariga mos ravishda amalga oshiriladi.
-            </span>
-          </div>
-        </div>
-      )}
 
     </div>
   );
