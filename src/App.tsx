@@ -11,6 +11,7 @@ import {
 
 import { Profile, Subject, TestSession, TestResult } from './types';
 import { LocalDbService } from './db/localDb';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Modular Component imports
 import { AuthPage } from './components/AuthPage';
@@ -426,6 +427,7 @@ export default function App() {
         </div>
       </footer>
 
+      <SpeedInsights />
     </div>
   );
 }
