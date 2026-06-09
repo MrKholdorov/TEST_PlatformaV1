@@ -98,7 +98,16 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   const [userAnswers, setUserAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>(session.answers || {});
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const totalDurationSeconds = session.timeLeftSeconds || (session.testType * 60);
+
+  // Synchronize selectedAnswer with userAnswers when changing current index
+  useEffect(() => {
+    const currentQ = questions[currentIndex];
+    if (currentQ) {
+      setSelectedAnswer(userAnswers[currentQ.id] || null);
+    }
+  }, [currentIndex, questions, userAnswers]);
 
   // Find the first unanswered question
   useEffect(() => {
@@ -107,6 +116,13 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
       setCurrentIndex(unansweredIdx);
     }
   }, [session.id]);
+
+  // Clean timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, []);
 
   // Start countdown timer
   useEffect(() => {
@@ -140,7 +156,37 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
   const currentQuestion = questions[currentIndex];
 
+  const proceedToNext = (answersToUse = userAnswers) => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    setShowFeedback(false);
+    setSelectedAnswer(null);
+
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      handleSubmitTest(answersToUse);
+    }
+  };
+
   const handleOptionClick = (optionKey: 'A' | 'B' | 'C' | 'D') => {
+    if (session.isExamMode) {
+      // Exam mode: no lock, no delay, options changeable, saves instantly
+      const updatedAnswers = { ...userAnswers, [currentQuestion.id]: optionKey };
+      setUserAnswers(updatedAnswers);
+      setSelectedAnswer(optionKey);
+
+      const updatedSession = {
+        ...session,
+        timeLeftSeconds: timeLeft,
+        answers: updatedAnswers
+      };
+      LocalDbService.saveSession(updatedSession);
+      return;
+    }
+
     if (showFeedback) return; // Prevent double clicks during feedback holds
 
     setSelectedAnswer(optionKey);
@@ -159,17 +205,12 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
     LocalDbService.saveSession(updatedSession);
 
     // Stagger slightly for user absorption (Quizizz style) & auto move to next
-    const delay = fastMode ? 400 : 1500;
-    setTimeout(() => {
-      setShowFeedback(false);
-      setSelectedAnswer(null);
-
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-      } else {
-        // Last question reached, auto submit test!
-        handleSubmitTest(updatedAnswers);
-      }
+    // Correct delay: fastMode ? 400 : 1500. Incorrect penalty: 5000 (5 seconds)
+    const delay = isCorrect ? (fastMode ? 400 : 1500) : 5000;
+    
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => {
+      proceedToNext(updatedAnswers);
     }, delay);
   };
 
@@ -344,9 +385,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           <h1 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-relaxed max-w-2xl mx-auto">
             {currentQuestion.questionText}
           </h1>
-        </div>
-
-        {/* Options Grid Layout matching Quizizz styles with full colors */}
+        </div>        {/* Options Grid Layout matching Quizizz styles with full colors */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(['A', 'B', 'C', 'D'] as const).map((key) => {
             const optionText = currentQuestion.options[key];
@@ -359,10 +398,16 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
             let circleColor = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
             let rightIndicator = null;
 
-            if (showFeedback) {
+            if (session.isExamMode) {
+              if (isSelected) {
+                btnStyle = "border-blue-500 bg-blue-50/30 text-blue-850 dark:text-blue-200 dark:bg-blue-950/30 ring-4 ring-blue-500/10 scale-[1.01]";
+                circleColor = "bg-blue-500 text-white";
+                rightIndicator = <CheckCircle size={18} className="text-blue-500 shrink-0" />;
+              }
+            } else if (showFeedback) {
               if (isCorrectAnswer) {
                 btnStyle = "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900 ring-4 ring-emerald-500/10 scale-[1.01]";
-                circleColor = "bg-emerald-505 bg-emerald-500 text-white";
+                circleColor = "bg-emerald-500 text-white";
                 rightIndicator = <CheckCircle size={18} className="text-emerald-500 shrink-0" />;
               } else if (hasChosenWorst) {
                 btnStyle = "border-red-500 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900 ring-4 ring-red-500/10";
@@ -376,7 +421,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
             return (
               <button
                 key={key}
-                disabled={showFeedback}
+                disabled={!session.isExamMode && showFeedback}
                 onClick={() => handleOptionClick(key)}
                 className={`flex items-center justify-between p-4.5 rounded-2xl border text-left font-semibold text-sm sm:text-base leading-snug transition-all duration-150 shadow-premium cursor-pointer ${btnStyle}`}
               >
@@ -392,17 +437,135 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           })}
         </div>
 
-        {/* Manual submit emergency backup button */}
-        <div className="flex justify-between items-center text-xs text-slate-400 mt-2">
-          <span>Tizim javobni kiritganingizda avtomatik ravishda saqlaydi va bir zumda harakatlanadi.</span>
-          <button
-            onClick={() => handleSubmitTest(userAnswers)}
-            className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 px-3 py-1.5 rounded-lg active:scale-95"
-            id="btn-quiz-manual-submit"
-          >
-            Imtihonni topshirish
-          </button>
-        </div>
+        {/* Practice Mode: Skip feedback / 5s freeze timer controls */}
+        {!session.isExamMode && showFeedback && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-200 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm text-left">
+            <div className="flex items-center gap-3">
+              {currentQuestion.correctAnswer === selectedAnswer ? (
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0">
+                  <CheckCircle size={20} />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 text-red-600 flex items-center justify-center shrink-0 animate-pulse">
+                  <XCircle size={20} />
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {currentQuestion.correctAnswer === selectedAnswer 
+                    ? "To'g'ri javob!" 
+                    : "Noto'g'ri javob! Kutish vaqti: 5 soniya."}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {currentQuestion.correctAnswer === selectedAnswer 
+                    ? "Yaxshi natija! Harakatda davom eting." 
+                    : "To'g'ri javob yashil rangda ko'rsatildi. Kutishni chetlab o'tish uchun o'ngdagi tugmani bosing."}
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => proceedToNext(userAnswers)}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl active:scale-95 transition shadow-glow cursor-pointer whitespace-nowrap"
+            >
+              Keyingi savol <ArrowRight size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Exam Mode: Grid Navigation and Back/Next Buttons */}
+        {session.isExamMode && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-premium space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider text-left">Savollar orasida harakatlanish:</span>
+              <span className="text-[10px] font-bold text-slate-400 text-left">Ko'k: hozirgi, To'la: javoblangan, Kulrang: javoblanmagan</span>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 justify-start max-h-32 overflow-y-auto p-1">
+              {questions.map((q, idx) => {
+                const isCurrent = idx === currentIndex;
+                const isAnswered = !!userAnswers[q.id];
+                
+                let badgeStyle = "bg-slate-50 border-slate-200 dark:bg-slate-800/40 dark:border-slate-800 text-slate-600 dark:text-slate-400";
+                if (isCurrent) {
+                  badgeStyle = "bg-blue-600 border-blue-600 text-white font-black scale-110 ring-4 ring-blue-500/10";
+                } else if (isAnswered) {
+                  badgeStyle = "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-900 dark:text-blue-400 font-bold";
+                }
+                
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`w-9 h-9 rounded-xl border text-xs flex items-center justify-center cursor-pointer transition active:scale-90 font-bold ${badgeStyle}`}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Previous & Next controls */}
+            <div className="flex justify-between items-center pt-3 gap-4 border-t border-slate-100 dark:border-slate-850">
+              <button
+                disabled={currentIndex === 0}
+                onClick={() => setCurrentIndex(prev => prev - 1)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                <ArrowLeft size={14} /> Oldingi
+              </button>
+
+              <span className="text-xs font-bold font-sans text-slate-400">
+                {currentIndex + 1} - savol
+              </span>
+
+              <button
+                disabled={currentIndex === questions.length - 1}
+                onClick={() => setCurrentIndex(prev => prev + 1)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                Keyingi <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Footer Area with Submit Buttons */}
+        {session.isExamMode ? (
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-blue-50/55 dark:bg-blue-950/30 border border-blue-100/50 dark:border-blue-900/40 p-4 rounded-3xl mt-4">
+            <div className="text-left">
+              <span className="text-xs font-bold text-blue-800 dark:text-blue-400 block">Imtihon topshirishga tayyormisiz?</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Barcha javoblaringizni tekshirgach, tugatish tugmasini bosing.</span>
+            </div>
+            <button
+              onClick={() => {
+                const unansweredCount = questions.length - Object.keys(userAnswers).length;
+                const confirmMsg = unansweredCount > 0 
+                  ? `Diqqat! Sizda hali javob berilmagan ${unansweredCount} ta savol qolmoqda. Baribir imtihonni yakunlamoqchimisiz?`
+                  : "Haqiqatdan ham imtihonni yakunlab, natijalarni ko'rmoqchimisiz?";
+                if (confirm(confirmMsg)) {
+                  handleSubmitTest(userAnswers);
+                }
+              }}
+              className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl transition active:scale-95 text-xs shadow-glow cursor-pointer whitespace-nowrap"
+              id="btn-quiz-manual-submit"
+            >
+              Imtihonni topshirish va yakunlash
+            </button>
+          </div>
+        ) : (
+          /* Manual submit emergency backup button */
+          <div className="flex justify-between items-center text-xs text-slate-400 mt-2">
+            <span>Tizim javobni kiritganingizda avtomatik ravishda saqlaydi va bir zumda harakatlanadi.</span>
+            <button
+              onClick={() => handleSubmitTest(userAnswers)}
+              className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 px-3 py-1.5 rounded-lg active:scale-95"
+              id="btn-quiz-manual-submit"
+            >
+              Imtihonni topshirish
+            </button>
+          </div>
+        )}
       </div>
 
     </div>

@@ -55,6 +55,7 @@ export interface TestSession {
   timeLeftSeconds: number | null;
   answers: Record<string, 'A' | 'B' | 'C' | 'D'>; // questionId -> selectedOption
   mixedSubjectIds?: string[];
+  isExamMode?: boolean;
 }
 
 export interface TestResult {

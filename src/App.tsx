@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Phone, Compass, Sun, Moon, LogOut, FileCheck, Landmark,
   Award, HelpCircle, Activity, Globe, Send, UserCheck, Play, ArrowRight, Zap,
-  Bell, CheckCheck
+  Bell, CheckCheck, CheckCircle, XCircle, Sparkles
 } from 'lucide-react';
 
 import { Profile, Subject, TestSession, TestResult, DBNotification } from './types';
@@ -202,7 +202,14 @@ export default function App() {
   };
 
   // Launch test session workflow
-  const handleStartExam = (subjectId: string, testType: 20 | 30 | 50 | 100, mixedSubjectIds: string[] | undefined, isTimerEnabled: boolean = true, timePerQuestion: number = 1) => {
+  const handleStartExam = (
+    subjectId: string, 
+    testType: 20 | 30 | 50 | 100, 
+    mixedSubjectIds: string[] | undefined, 
+    isTimerEnabled: boolean = true, 
+    timePerQuestion: number = 1,
+    isExamMode: boolean = false
+  ) => {
     if (!currentUser) return;
 
     const subjects = LocalDbService.getSubjects();
@@ -229,7 +236,8 @@ export default function App() {
       isCompleted: false,
       timeLeftSeconds: isTimerEnabled ? testType * timePerQuestion * 60 : null,
       answers: {},
-      mixedSubjectIds
+      mixedSubjectIds,
+      isExamMode
     };
 
     LocalDbService.saveSession(newSession);
@@ -637,6 +645,109 @@ export default function App() {
                     Asosiy sahifaga qaytish
                   </button>
                 </div>
+
+                {/* Visual Review of Questions and Correct/Incorrect Answers */}
+                {currentResult.questions && currentResult.questions.length > 0 && (
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-left shadow-premium space-y-6">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                      <div className="text-left">
+                        <h2 className="text-lg font-black text-slate-900 dark:text-white">Savollar tahlili</h2>
+                        <p className="text-xs text-slate-400 mt-0.5">Xato va to'g'ri javoblaringizni batafsil ko'rib chiqing.</p>
+                      </div>
+                      <span className="font-mono text-xs font-bold text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0">
+                        Natija: {currentResult.correctAnswers} / {currentResult.testType}
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      {currentResult.questions.map((q: any, idx: number) => {
+                        const userAnswer = currentResult.answers ? currentResult.answers[q.id] : undefined;
+                        const isCorrect = userAnswer === q.correctAnswer;
+                        const isUnanswered = !userAnswer;
+
+                        return (
+                          <div 
+                            key={q.id}
+                            className={`p-5 rounded-2xl border transition-all duration-150 ${
+                              isUnanswered 
+                                ? 'bg-slate-50/50 border-slate-200 dark:bg-slate-950/20 dark:border-slate-800/80' 
+                                : isCorrect 
+                                  ? 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-950/10 dark:border-emerald-900/30' 
+                                  : 'bg-red-50/30 border-red-100 dark:bg-red-950/10 dark:border-red-900/30'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start gap-4">
+                              <span className={`text-xs font-black px-2.5 py-1 rounded shrink-0 ${
+                                isUnanswered 
+                                  ? 'bg-slate-100 text-slate-500 dark:bg-slate-800' 
+                                  : isCorrect 
+                                    ? 'bg-emerald-100/85 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' 
+                                    : 'bg-red-100/85 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                              }`}>
+                                {idx + 1}-Savol {isUnanswered ? "(Javobsiz)" : isCorrect ? "(To'g'ri)" : "(Xato)"}
+                              </span>
+                            </div>
+
+                            <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-3 leading-relaxed text-left">
+                              {q.questionText}
+                            </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
+                              {(['A', 'B', 'C', 'D'] as const).map((key) => {
+                                const optionText = q.options[key];
+                                const isCorrectOption = q.correctAnswer === key;
+                                const isUserOption = userAnswer === key;
+
+                                let borderStyle = "border-slate-150 dark:border-slate-800 bg-white/70 dark:bg-slate-950/30";
+                                let textColor = "text-slate-800 dark:text-slate-300";
+                                let badgeColor = "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+                                let icon = null;
+
+                                if (isCorrectOption) {
+                                  borderStyle = "border-emerald-300 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40";
+                                  textColor = "text-emerald-800 dark:text-emerald-400 font-bold";
+                                  badgeColor = "bg-emerald-500 text-white";
+                                  icon = <CheckCircle size={14} className="text-emerald-500 shrink-0" />;
+                                } else if (isUserOption) {
+                                  // This means user answered incorrectly because correct option is handled above
+                                  borderStyle = "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/40";
+                                  textColor = "text-red-800 dark:text-red-400 font-bold";
+                                  badgeColor = "bg-red-500 text-white";
+                                  icon = <XCircle size={14} className="text-red-500 shrink-0" />;
+                                }
+
+                                return (
+                                  <div 
+                                    key={key} 
+                                    className={`flex items-center justify-between p-3 rounded-xl border text-xs gap-3 text-left ${borderStyle}`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className={`w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] shrink-0 ${badgeColor}`}>
+                                        {key}
+                                      </span>
+                                      <span className={textColor}>{optionText}</span>
+                                    </div>
+                                    {icon}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {q.explanation && (
+                              <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-900/55 rounded-xl border border-slate-100 dark:border-slate-850 text-xs text-slate-500 dark:text-slate-400 leading-relaxed text-left flex gap-1.5 items-start">
+                                <Sparkles size={14} className="text-blue-500 shrink-0 mt-0.5 animate-pulse" />
+                                <div>
+                                  <b className="text-slate-700 dark:text-slate-350">Izoh: </b>
+                                  {q.explanation}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 
                 {/* MODAL Popup for Certificate viewer in active result tree */}
                 {showCertificateModal && currentUser && (

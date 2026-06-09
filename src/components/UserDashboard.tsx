@@ -16,7 +16,14 @@ import { DynamicIcon } from './DynamicIcon';
 
 interface UserDashboardProps {
   profile: Profile;
-  onStartExam: (subjectId: string, testType: 20 | 30 | 50 | 100, mixedSubjectIds: string[] | undefined, isTimerEnabled: boolean, timePerQuestion: number) => void;
+  onStartExam: (
+    subjectId: string, 
+    testType: 20 | 30 | 50 | 100, 
+    mixedSubjectIds: string[] | undefined, 
+    isTimerEnabled: boolean, 
+    timePerQuestion: number,
+    isExamMode: boolean
+  ) => void;
   onLogOut: () => void;
   onNavigate?: (view: string) => void;
   onAdminNavigation?: () => void;

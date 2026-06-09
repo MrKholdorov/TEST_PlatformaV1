@@ -19,6 +19,7 @@ export const DuelArena: React.FC<Props> = ({ duel, currentUser, onExit }) => {
   
   // Real-time synchronization
   const [localPlayers, setLocalPlayers] = useState(duel.players);
+  const feedbackTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     // Keep local players synchronized from duel props which is updated by onSnapshot in parent
@@ -31,6 +32,22 @@ export const DuelArena: React.FC<Props> = ({ duel, currentUser, onExit }) => {
     const fetchedQs = duel.questionIds.map(id => allQs.find(q => q.id === id)).filter(Boolean) as Question[];
     setQuestions(fetchedQs);
   }, [duel.questionIds]);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, []);
+
+  const proceedToNextDuelQuestion = () => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+    }
+  };
 
   const handleAnswer = async (qId: string, answerKey: string) => {
     if (selectedAnswers[qId] || duel.status === 'finished') return;
@@ -59,6 +76,13 @@ export const DuelArena: React.FC<Props> = ({ duel, currentUser, onExit }) => {
       players,
       ...(allCompleted ? { status: 'finished', finishedAt: new Date().toISOString() } : {})
     });
+
+    // Auto-advance with hold penalty: 1.5 seconds if correct, 5 seconds if incorrect
+    const delay = isCorrect ? 1500 : 5000;
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => {
+      proceedToNextDuelQuestion();
+    }, delay);
   };
 
   const currentQ = questions[currentIndex];
@@ -182,13 +206,40 @@ export const DuelArena: React.FC<Props> = ({ duel, currentUser, onExit }) => {
 
          {selectedAnswers[currentQ.id] && currentIndex < questions.length - 1 && (
            <button 
-             onClick={() => setCurrentIndex(prev => prev + 1)} 
+             onClick={proceedToNextDuelQuestion} 
              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md flex items-center gap-2 active:scale-95 transition"
            >
              Keyingi <ArrowRight size={16} />
            </button>
          )}
-         {selectedAnswers[currentQ.id] && currentIndex === questions.length - 1 && (
+         {selectedAnswers[currentQ.id] && (
+            <div className="w-full text-left p-4 mb-4 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                {currentQ.correctAnswer === selectedAnswers[currentQ.id] ? (
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/43 text-emerald-600 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={20} />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/43 text-red-650 flex items-center justify-center shrink-0 animate-pulse">
+                    <XCircle size={20} />
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-bold text-slate-850 dark:text-slate-100">
+                    {currentQ.correctAnswer === selectedAnswers[currentQ.id] 
+                      ? "To'g'ri javob!" 
+                      : "Noto'g'ri javob! Kutish vaqti: 5 soniya."}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {currentQ.correctAnswer === selectedAnswers[currentQ.id] 
+                      ? "Siz 1 ochko to'pladingiz!" 
+                      : "Kutishni chetlab o'tish uchun 'Keyingi' tugmasini bosing."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {selectedAnswers[currentQ.id] && currentIndex === questions.length - 1 && (
            <div className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl text-xs font-bold animate-pulse">
              Raqib tugatishini kuting...
            </div>
