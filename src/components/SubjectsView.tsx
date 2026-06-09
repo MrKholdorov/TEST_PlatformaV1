@@ -180,114 +180,117 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
       {/* EXAM CONFIGURATION MODAL */}
       {activeSubjectForExam && (
         <div className="fixed inset-0 z-50 bg-[#000000]/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-premium text-left animate-scale-up space-y-6">
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-premium text-left animate-scale-up max-h-[90vh] flex flex-col">
             
-            {/* Header */}
-            <div>
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
-                <DynamicIcon name={activeSubjectForExam.icon} size={24} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                {activeSubjectForExam.name}
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">Imtihonga mos savollar sonini tanlang:</p>
-            </div>
-
-            {/* Selection Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {[20, 30, 50, 100].map((length) => (
-                <button
-                  key={length}
-                  onClick={() => setSelectedExamType(length as any)}
-                  className={`p-3 rounded-2xl border text-center transition duration-150 cursor-pointer ${selectedExamType === length ? 'bg-blue-50 text-blue-600 border-blue-500 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900 ring-4 ring-blue-500/10' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100'}`}
-                >
-                  <p className="text-lg font-black font-sans tracking-tight leading-none">{length}</p>
-                  <p className="text-[10px] font-bold uppercase mt-1">Savolli test</p>
-                  <p className="text-[9px] font-sans tracking-tight whitespace-nowrap text-slate-400">{length} daqiqa vaqt</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Mixed Subject Optimization */}
-            {activeSubjectForExam.id === 'mixed' && (
-              <div className="space-y-2 mt-4">
-                <p className="text-xs font-bold text-slate-900 dark:text-white">Qaysi fanlardan savol tushsin?</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                   {subjects.map(sub => (
-                     <label key={sub.id} className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer">
-                       <input 
-                         type="checkbox" 
-                         className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" 
-                         checked={selectedMixedSubjects.includes(sub.id)}
-                         onChange={(e) => {
-                           if (e.target.checked) {
-                             setSelectedMixedSubjects(prev => [...prev, sub.id]);
-                           } else {
-                             setSelectedMixedSubjects(prev => prev.filter(id => id !== sub.id));
-                           }
-                         }}
-                       />
-                       <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{sub.name}</span>
-                     </label>
-                   ))}
+            {/* Scrollable Content area */}
+            <div className="overflow-y-auto flex-1 space-y-6 pr-1 mr-[-4px]">
+              {/* Header */}
+              <div>
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                  <DynamicIcon name={activeSubjectForExam.icon} size={24} />
                 </div>
-              </div>
-            )}
-
-            {/* Timer Settings */}
-            <div className="space-y-4 mt-6">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">Vaqt chegarasi (taymer) bilan ishlash</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" checked={isTimerEnabled} onChange={(e) => setIsTimerEnabled(e.target.checked)} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
-                </label>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                  {activeSubjectForExam.name}
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">Imtihonga mos savollar sonini tanlang:</p>
               </div>
 
-              {isTimerEnabled && (
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">1 ta savol uchun vaqt (daqiqa): {timePerQuestion}</label>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="5" 
-                    step="1" 
-                    value={timePerQuestion} 
-                    onChange={(e) => setTimePerQuestion(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-blue-600"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-bold">
-                    <span>1 daq</span>
-                    <span>5 daq</span>
+              {/* Selection Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {[20, 30, 50, 100].map((length) => (
+                  <button
+                    key={length}
+                    onClick={() => setSelectedExamType(length as any)}
+                    className={`p-3 rounded-2xl border text-center transition duration-150 cursor-pointer ${selectedExamType === length ? 'bg-blue-50 text-blue-600 border-blue-500 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900 ring-4 ring-blue-500/10' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100'}`}
+                  >
+                    <p className="text-lg font-black font-sans tracking-tight leading-none">{length}</p>
+                    <p className="text-[10px] font-bold uppercase mt-1">Savolli test</p>
+                    <p className="text-[9px] font-sans tracking-tight whitespace-nowrap text-slate-400">{length} daqiqa vaqt</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Mixed Subject Optimization */}
+              {activeSubjectForExam.id === 'mixed' && (
+                <div className="space-y-2 mt-4">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Qaysi fanlardan savol tushsin?</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                     {subjects.map(sub => (
+                       <label key={sub.id} className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer">
+                         <input 
+                           type="checkbox" 
+                           className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" 
+                           checked={selectedMixedSubjects.includes(sub.id)}
+                           onChange={(e) => {
+                             if (e.target.checked) {
+                               setSelectedMixedSubjects(prev => [...prev, sub.id]);
+                             } else {
+                               setSelectedMixedSubjects(prev => prev.filter(id => id !== sub.id));
+                             }
+                           }}
+                         />
+                         <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{sub.name}</span>
+                       </label>
+                     ))}
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Exam Mode Toggle */}
-            <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mt-6 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-left pr-2">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white block">Imtihon usulida ishlash</span>
-                  <span className="text-[10px] text-slate-400 font-medium block">Savollarni javoblamasdan o'tkazish, orqaga qaytish va javobni o'zgartirish mumkin. Noto'g'ri/to'g'riligi srazi bilinmaydi.</span>
+              {/* Timer Settings */}
+              <div className="space-y-4 mt-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">Vaqt chegarasi (taymer) bilan ishlash</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={isTimerEnabled} onChange={(e) => setIsTimerEnabled(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input type="checkbox" checked={isExamMode} onChange={(e) => setIsExamMode(e.target.checked)} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600 font-sans"></div>
-                </label>
+
+                {isTimerEnabled && (
+                  <div className="bg-slate-50 dark:bg-slate-885 bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">1 ta savol uchun vaqt (daqiqa): {timePerQuestion}</label>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="5" 
+                      step="1" 
+                      value={timePerQuestion} 
+                      onChange={(e) => setTimePerQuestion(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-blue-600"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-bold">
+                      <span>1 daq</span>
+                      <span>5 daq</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Exam Mode Toggle */}
+              <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 mt-6 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-left pr-2">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white block">Imtihon usulida ishlash</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">Savollarni javoblamasdan o'tkazish, orqaga qaytish va javobni o'zgartirish mumkin. Noto'g'ri/to'g'riligi srazi bilinmaydi.</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" checked={isExamMode} onChange={(e) => setIsExamMode(e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600 font-sans"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Info and Warning */}
+              <div className="flex gap-2 items-start bg-slate-50 dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 text-slate-400 mt-6 text-left">
+                <ShieldAlert size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                <p className="text-[10px] leading-relaxed">
+                  {isTimerEnabled ? `Tizimda har bir savol uchun ${timePerQuestion} daqiqa vaqt ajratiladi.` : 'Siz timersiz rejimni tanladingiz. Vaqt chegaralanmagan.'} {isExamMode ? 'Imtihon rejimida siz savollar orasida bemalol o\'tishingiz mumkin.' : 'Imtihon boshlagach orqaga qaytib bo\'lmaydi.'} Savollar tasodifiy tushadi.
+                </p>
               </div>
             </div>
 
-            {/* Info and Warning */}
-            <div className="flex gap-2 items-start bg-slate-50 dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 text-slate-400 mt-6 text-left">
-              <ShieldAlert size={16} className="text-slate-400 shrink-0 mt-0.5" />
-              <p className="text-[10px] leading-relaxed">
-                {isTimerEnabled ? `Tizimda har bir savol uchun ${timePerQuestion} daqiqa vaqt ajratiladi.` : 'Siz timersiz rejimni tanladingiz. Vaqt chegaralanmagan.'} {isExamMode ? 'Imtihon rejimida siz savollar orasida bemalol o\'tishingiz mumkin.' : 'Imtihon boshlagach orqaga qaytib bo\'lmaydi.'} Savollar tasodifiy tushadi.
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 justify-end pt-4">
+            {/* Actions Footer */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 shrink-0 mt-2">
               <button
                 onClick={() => setActiveSubjectForExam(null)}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
