@@ -499,8 +499,31 @@ if (BOT_TOKEN) {
     return next();
   });
   
-  // Start bot non-blocking
-  bot.launch().catch(e => console.error("Telegram bot error:", e));
+  // Start bot non-blocking with proper error handling to prevent connection conflict wars
+  if (process.env.TELEGRAM_DISABLE_POLLING === 'true') {
+    console.log("ℹ️ TELEGRAM BOT: Polling has been manually disabled via TELEGRAM_DISABLE_POLLING env variable.");
+  } else {
+    bot.launch().catch(e => {
+      const isConflict = 
+        e?.code === 409 || 
+        e?.response?.error_code === 409 || 
+        String(e).includes('409') || 
+        String(e).includes('Conflict');
+        
+      if (isConflict) {
+        console.warn("\n======================================================================");
+        console.warn("⚠️ TELEGRAM BOT: MULTIPLE POLLED INSTANCES DETECTED (409 Conflict) ⚠️");
+        console.warn("Your Telegram Bot token is actively being used by another instance");
+        console.warn("(for example, on your production Vercel/Render site or another active terminal).");
+        console.warn("\nBecause only one instance of a Telegram Bot can poll for updates at a time:");
+        console.warn("  - Local development polling is suspended gracefully to avoid network conflict.");
+        console.warn("  - Your local web server continues running completely safely.");
+        console.warn("======================================================================\n");
+      } else {
+        console.error("Telegram bot failed to launch:", e);
+      }
+    });
+  }
   
   // Enable graceful stop
   process.once('SIGINT', () => bot?.stop('SIGINT'));

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Mail, Lock, Phone, User, LogIn, ArrowRight, Star, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Phone, User, LogIn, ArrowRight, Star, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Profile } from '../types';
 import { LocalDbService } from '../db/localDb';
 import { getTelegramUser, sendAdminNotification } from '../lib/telegramClient';
@@ -19,6 +19,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   onAdminAuthSuccess
 }) => {
   const [isLoginMode, setIsLoginMode] = useState<boolean>(true);
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+
   const [loginForm, setLoginForm] = useState({
     login: '',
     password: '',
@@ -26,12 +30,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   });
 
   const [registerForm, setRegisterForm] = useState({
-    login: '',
-    password: '',
     fullName: '',
     email: '',
-    phone: '',
-    termsAccepted: true
+    password: '',
+    confirmPassword: ''
   });
 
   // Check if we have telegram user on mount
@@ -62,7 +64,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     if (tgUser) {
       setRegisterForm({
         ...registerForm,
-        login: tgUser.username || `user_${tgUser.id}`,
         fullName: `${tgUser.first_name || ''} ${tgUser.last_name || ''}`.trim(),
       });
       setIsLoginMode(false);
@@ -72,10 +73,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const profiles = LocalDbService.getProfiles();
-    const found = profiles.find(p => p.login.toLowerCase() === loginForm.login.toLowerCase());
+    const found = profiles.find(p => 
+      p.login.toLowerCase() === loginForm.login.toLowerCase() ||
+      (p.email && p.email.toLowerCase() === loginForm.login.toLowerCase())
+    );
 
     if (!found) {
-      alert("Xatolik: Bunday login bilan o'quvchi ro'yxatdan o'tmagan!");
+      alert("Xatolik: Bunday login yoki elektron pochta bilan o'quvchi ro'yxatdan o'tmagan!");
       return;
     }
 
@@ -88,7 +92,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     // Strict Password Validation
     if (found.password && found.password !== loginForm.password) {
-      alert("Xatolik: Kiritilgan maxfiy kalitparol noto'g'ri!");
+      alert("Xatolik: Kiritilgan maxfiy parol noto'g'ri!");
       return;
     }
 
@@ -107,22 +111,38 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const profiles = LocalDbService.getProfiles();
 
-    // Enforce unique logins
-    const isLoginTaken = profiles.some(p => p.login.toLowerCase() === registerForm.login.toLowerCase());
-    if (isLoginTaken) {
-      alert("Xatolik: Ushu login band! Iltimos boshqa variant tanlang.");
+    if (registerForm.password !== registerForm.confirmPassword) {
+      alert("Xatolik: Parollar bir-biriga mos kelmadi! Iltimos, ikkala parolni ham bir xil kiriting.");
       return;
     }
 
+    if (registerForm.password.length < 6) {
+      alert("Xatolik: Parol uzunligi kamida 6 ta belgidan iborat bo'lishi kerak.");
+      return;
+    }
+
+    const profiles = LocalDbService.getProfiles();
+
+    // Enforce unique emails
+    const isEmailTaken = profiles.some(p => p.email.toLowerCase() === registerForm.email.toLowerCase());
+    if (isEmailTaken) {
+      alert("Xatolik: Ushbu elektron pochta manzili bilan allaqachon ro'yxatdan o'tilgan!");
+      return;
+    }
+
+    // Generates a simple slugified unique login based on emailprefix
+    const generatedLogin = registerForm.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || `usr_${Date.now()}`;
+    const loginTaken = profiles.some(p => p.login.toLowerCase() === generatedLogin);
+    const finalLogin = loginTaken ? `${generatedLogin}${Math.floor(Math.random() * 1000)}` : generatedLogin;
+
     const newUser: Profile = {
       id: `usr-${Date.now()}`,
-      login: registerForm.login,
+      login: finalLogin,
       fullName: registerForm.fullName,
       email: registerForm.email,
-      phone: registerForm.phone,
-      password: registerForm.password, // Save password
+      phone: '',
+      password: registerForm.password,
       lastLogin: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       xp: 150, // Initial welcoming score
@@ -135,7 +155,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     LocalDbService.addLog(newUser.id, newUser.fullName, "Ro'yxatdan o'tish", "Yangi foydalanuvchi muvaffaqiyatli ro'yxatdan o'tdi.");
     
     // Auto-alert Telegram hook for Admin
-    sendAdminNotification(`👤 <b>Yangi foydalanuvchi ro'yxatdan o'tdi</b>\n\n• F.I.SH: <b>${newUser.fullName}</b>\n• Login: <code>${newUser.login}</code>\n• Telefon: ${newUser.phone || 'Kiritilmagan'}\n• Email: ${newUser.email || 'Kiritilmagan'}`);
+    sendAdminNotification(`👤 <b>Yangi foydalanuvchi ro'yxatdan o'tdi</b>\n\n• F.I.SH: <b>${newUser.fullName}</b>\n• Login: <code>${newUser.login}</code>\n• Email: ${newUser.email}\n• Parol: <code>${newUser.password}</code>`);
 
     alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
     onAuthSuccess(newUser);
@@ -151,9 +171,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/25 rounded-full filter blur-3xl opacity-30"></div>
 
         <div className="space-y-4">
-          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 shadow-premium">
-            <ShieldCheck size={26} className="text-white" />
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            className="w-12 h-12 rounded-2xl object-cover shadow-premium" 
+            referrerPolicy="no-referrer"
+          />
           <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">INTERAKTIV AKADEMIYA</span>
           <h1 className="text-2xl sm:text-4xl font-extrabold leading-tight">
             Professional Online Test Tizimi
@@ -229,7 +252,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           {isLoginMode ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Foydalanuvchi logini</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Foydalanuvchi logini yoki Email manzili</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-3.5 text-slate-400" />
                   <input
@@ -238,7 +261,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     value={loginForm.login}
                     onChange={(e) => setLoginForm({ ...loginForm, login: e.target.value })}
                     className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                    placeholder="Masalan: jasur_imtihon"
+                    placeholder="Masalan: jasur_imtihon yoki jasur@email.com"
                   />
                 </div>
               </div>
@@ -248,13 +271,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
                   <input
-                    type="password"
+                    type={showLoginPassword ? "text" : "password"}
                     required
                     value={loginForm.password}
                     onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    className="w-full pl-10 pr-10 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 
@@ -291,63 +321,77 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             /* Form Content: SIGNUP MODE */
             <form onSubmit={handleRegisterSubmit} className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Foydalanuvchi logini (Takrorlanmas bo'lishi shart)</label>
-                <input
-                  type="text"
-                  required
-                  value={registerForm.login}
-                  onChange={(e) => setRegisterForm({ ...registerForm, login: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs"
-                  placeholder="Masalan: doston_dev"
-                />
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">To'liq ism-sharif (F.I.Sh - Sertifikat uchun)</label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={registerForm.fullName}
+                    onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
+                    className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Masalan: Karimova Zilola Bahromovna"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">To'liq ism-sharif (F.I.Sh - Sertifikat uchun)</label>
-                <input
-                  type="text"
-                  required
-                  value={registerForm.fullName}
-                  onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs"
-                  placeholder="Masalan: Karimova Zilola Bahromovna"
-                />
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Elektron pochta manzili</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={registerForm.email}
+                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                    className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Masalan: zilola@gmail.com"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Elektron pochta manzili</label>
-                <input
-                  type="email"
-                  required
-                  value={registerForm.email}
-                  onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs"
-                  placeholder="Masalan: zilola@gmail.com"
-                />
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Maxfiy parol</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type={showRegisterPassword ? "text" : "password"}
+                    required
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    className="w-full pl-10 pr-10 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Kamida 6 ta belgi"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showRegisterPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Telefon raqam</label>
-                <input
-                  type="tel"
-                  required
-                  value={registerForm.phone}
-                  onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs"
-                  placeholder="Masalan: +998-95-586-58-59"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Maxfiy parol</label>
-                <input
-                  type="password"
-                  required
-                  value={registerForm.password}
-                  onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs"
-                  placeholder="Kamida 6 belgi"
-                />
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Parolni tasdiqlash</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3 top-3.5 text-slate-400" />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    value={registerForm.confirmPassword}
+                    onChange={(e) => setRegisterForm({ ...registerForm, confirmPassword: e.target.value })}
+                    className="w-full pl-10 pr-10 py-3 border border-slate-200 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                    placeholder="Parolni qayta tasdiqlang"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <button

@@ -373,9 +373,12 @@ export default function App() {
             }}
             className="flex items-center gap-2.5 cursor-pointer"
           >
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-glow">
-              <ShieldCheck className="text-white w-5 h-5" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Online Imtihon Logo" 
+              className="w-9 h-9 rounded-xl object-cover shadow-glow"
+              referrerPolicy="no-referrer"
+            />
             <div>
               <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white uppercase font-sans">
                 Online Imtihon

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { History, ArrowLeft, TrendingUp, CheckCircle, XCircle, Award } from 'lucide-react';
+import { History, ArrowLeft, TrendingUp, CheckCircle, XCircle, Award, Download, Printer } from 'lucide-react';
 import { TestResult, Profile, Question } from '../types';
 import { LocalDbService } from '../db/localDb';
 import { Certificate } from './Certificate';
@@ -28,6 +28,299 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       .filter(r => r.userId === currentUser.id)
       .reverse(); // Newest first
     setResults(myResults);
+  };
+
+  // Export all test history in JSON format
+  const exportAllToJSON = () => {
+    try {
+      const exportData = results.map(r => ({
+        id: r.id,
+        fani: r.subjectName,
+        test_turi: `${r.testType} talik`,
+        togri_javoblar: r.correctAnswers,
+        xato_javoblar: r.wrongAnswers,
+        ball_foizi: `${r.percentageScore}%`,
+        sarflangan_vaqt: r.completionTimeFormatted,
+        sana: new Date(r.createdAt).toLocaleString('uz-UZ'),
+        id_kod: r.id
+      }));
+
+      const strData = JSON.stringify({
+        platforma: "Online Imtihon Platformasi",
+        foydalanuvchi: {
+          ism_familiya: currentUser.fullName,
+          email: currentUser.email,
+          tel_raqam: currentUser.phone
+        },
+        eksport_vaqti: new Date().toLocaleString('uz-UZ'),
+        imtihonlar_soni: results.length,
+        ortacha_ball: `${avgScore}%`,
+        eng_yaxshi_natija: `${bestScore}%`,
+        natijalar_arxivi: exportData
+      }, null, 2);
+
+      const blob = new Blob([strData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${currentUser.fullName.replace(/\s+/g, '_')}_imtihon_natijalari_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export to JSON failed:", err);
+      alert("JSON formatida eksport qilishda xatolik yuz berdi");
+    }
+  };
+
+  // Export all summary results in PDF format (via formatted popup window.print)
+  const exportAllToPDF = () => {
+    try {
+      if (results.length === 0) {
+        alert("Eksport qilish uchun hech qanday test natijalari mavjud emas.");
+        return;
+      }
+
+      const rowsHTML = results.map((r, index) => `
+        <tr class="border-b border-slate-200">
+          <td class="p-3 text-center font-bold text-xs">${index + 1}</td>
+          <td class="p-3 text-sm font-bold">${r.subjectName}</td>
+          <td class="p-3 text-center text-xs text-slate-600">${new Date(r.createdAt).toLocaleDateString()}</td>
+          <td class="p-3 text-center text-xs">${r.testType} talik</td>
+          <td class="p-3 text-center text-sm font-mono font-bold text-emerald-600">${r.correctAnswers}</td>
+          <td class="p-3 text-center text-sm font-mono font-bold text-red-600">${r.wrongAnswers}</td>
+          <td class="p-3 text-center text-sm font-semibold">${r.completionTimeFormatted}</td>
+          <td class="p-3 text-center text-sm font-black ${r.percentageScore >= 60 ? 'text-emerald-600' : 'text-red-600'}">${r.percentageScore}%</td>
+        </tr>
+      `).join('');
+
+      const win = window.open('', '', 'width=1000,height=750');
+      if (win) {
+        win.document.write(`
+          <html>
+            <head>
+              <title>Imtihon Natijalari Hisoboti - ${currentUser.fullName}</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+              <style>
+                body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: white; color: #1e293b; }
+                @media print {
+                  body { background-color: white; -webkit-print-color-adjust: exact; }
+                }
+              </style>
+            </head>
+            <body class="p-8">
+              <div class="max-w-4xl mx-auto space-y-8">
+                <!-- Brand Header -->
+                <div class="flex justify-between items-center border-b-2 border-slate-200 pb-5">
+                  <div>
+                    <h1 class="text-2xl font-extrabold text-[#0F172A] tracking-tight">ONLINE IMTIHON PLATFORMASI</h1>
+                    <p class="text-xs text-slate-500 mt-1">Sizning mustaqil bilim darajangiz ko'rsatkichlari</p>
+                  </div>
+                  <div class="text-right text-xs text-slate-400">
+                    <p>Sana: ${new Date().toLocaleDateString('uz-UZ')}</p>
+                    <p>Foydalanuvchi ID: ${currentUser.id}</p>
+                  </div>
+                </div>
+
+                <!-- User Info Profile Summary -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ism Familiya</p>
+                    <p class="text-base font-extrabold text-slate-900 mt-0.5">${currentUser.fullName}</p>
+                    <p class="text-xs text-slate-500">${currentUser.email || 'Email kiritilmagan'}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tizimga bog'langan telefon</p>
+                    <p class="text-sm font-bold text-slate-900 mt-1">${currentUser.phone || 'Telefon kiritilmagan'}</p>
+                  </div>
+                </div>
+
+                <!-- KPI Statistics -->
+                <div class="grid grid-cols-3 gap-4">
+                  <div class="p-4 bg-blue-50/50 border border-blue-200 rounded-2xl text-center">
+                    <p class="text-[10px] font-extrabold text-blue-800 uppercase tracking-widest font-sans">JAMI URINISHLAR</p>
+                    <p class="text-2xl font-black text-slate-900 mt-1">${results.length} marta</p>
+                  </div>
+                  <div class="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl text-center">
+                    <p class="text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest font-sans">ENG YAXSHI NATIJA</p>
+                    <p class="text-2xl font-black text-emerald-600 mt-1">${bestScore}%</p>
+                  </div>
+                  <div class="p-4 bg-orange-50/50 border border-orange-200 rounded-2xl text-center">
+                    <p class="text-[10px] font-extrabold text-orange-800 uppercase tracking-widest font-sans">O'RTACHA BALL</p>
+                    <p class="text-2xl font-black text-orange-600 mt-1">${avgScore}%</p>
+                  </div>
+                </div>
+
+                <!-- Table Content -->
+                <div>
+                  <h3 class="font-extrabold text-sm text-[#0F172A] mb-3">📋 IMTIHON NATIJALARI BATAFSIL RO'YXATI</h3>
+                  <table class="w-full text-left border-collapse">
+                    <thead>
+                      <tr class="bg-slate-100 text-[10px] font-extrabold uppercase text-slate-600 tracking-wider">
+                        <th class="p-3 text-center w-12 border border-slate-200">T/r</th>
+                        <th class="p-3 border border-slate-200">Fan nomi</th>
+                        <th class="p-3 text-center border border-slate-200">Topshirilgan sana</th>
+                        <th class="p-3 text-center border border-slate-200">Test hajmi</th>
+                        <th class="p-3 text-center border border-slate-200 text-emerald-700">To'g'ri</th>
+                        <th class="p-3 text-center border border-slate-200 text-red-700">Xato</th>
+                        <th class="p-3 text-center border border-slate-200">Sarflangan vaqt</th>
+                        <th class="p-3 text-center border border-slate-200">Ball foizi</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      ${rowsHTML}
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Summary Footer Certificate Eligibility -->
+                <div class="text-center pt-8 border-t border-slate-200 font-sans">
+                  <p class="text-[11px] text-slate-400 tracking-wide">
+                    Ushbu hisobot Online Imtihon tizimi ma'lumotlar bazasi asosida avtomatik ravishda tayyorlandi.
+                  </p>
+                  <p class="text-[9px] text-slate-350 font-mono mt-1">Eksport kodi: EXPORT-${(Math.random() * 1e9).toFixed(0)}</p>
+                </div>
+              </div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  setTimeout(() => { window.close(); }, 500);
+                }
+              </script>
+            </body>
+          </html>
+        `);
+        win.document.close();
+      }
+    } catch (err) {
+      console.error("Export to PDF failed:", err);
+      alert("Natijalar tahlilini PDF formatiga yuzlashda xatolik yuz berdi");
+    }
+  };
+
+  // Export a single test session's breakdown to beautiful printable PDF
+  const exportSingleTestToPDF = (test: TestResult) => {
+    try {
+      if (!test || !test.questions || !test.answers) {
+        alert("Xatolik: Savollar ma'lumotlari mavjud emas.");
+        return;
+      }
+
+      const questionsListHTML = test.questions.map((q, index) => {
+        const userAnswer = test.answers![q.id];
+        const isCorrect = userAnswer === q.correctAnswer;
+
+        const optionsHTML = Object.entries(q.options).map(([key, text]) => {
+          let badgeStyle = "bg-white border-slate-200 text-slate-700";
+          if (key === q.correctAnswer) {
+            badgeStyle = "bg-emerald-100 border-emerald-400 text-emerald-800 font-bold";
+          } else if (key === userAnswer && !isCorrect) {
+            badgeStyle = "bg-red-100 border-red-400 text-red-800 font-bold";
+          }
+
+          return `
+            <div class="flex items-center gap-3 p-2.5 rounded-xl border text-xs ${badgeStyle}">
+              <span class="w-5 h-5 flex items-center justify-center rounded bg-slate-100/60 font-black text-[10px] shrink-0">${key}</span>
+              <span>${text}</span>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 break-inside-avoid">
+            <h4 class="font-bold text-sm text-slate-900">${index + 1}. ${q.questionText}</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              ${optionsHTML}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const win = window.open('', '', 'width=1000,height=850');
+      if (win) {
+        win.document.write(`
+          <html>
+            <head>
+              <title>Imtihon Savollari Tahlili - ${test.subjectName}</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+              <style>
+                body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: white; color: #1e293b; }
+                .break-inside-avoid { break-inside: avoid; }
+                @media print {
+                  body { background-color: white; -webkit-print-color-adjust: exact; }
+                }
+              </style>
+            </head>
+            <body class="p-8">
+              <div class="max-w-4xl mx-auto space-y-6">
+                <!-- Header -->
+                <div class="flex justify-between items-center border-b pb-4">
+                  <div>
+                    <h1 class="text-xl font-bold text-slate-900 uppercase">ONLINE IMTIHON PLATFORMASI</h1>
+                    <p class="text-xs text-slate-500 font-semibold">${test.subjectName} fani savollar tahlili</p>
+                  </div>
+                  <div class="text-right text-xs text-slate-400">
+                    <p>Berilgan sana: ${new Date(test.createdAt).toLocaleDateString('uz-UZ')}</p>
+                    <p>Imtihon kodi: ${test.id}</p>
+                  </div>
+                </div>
+
+                <!-- Student & Results Card -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                  <div>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider font-sans">FOYDALANUVCHI</p>
+                    <p class="text-base font-extrabold text-[#0F172A] mt-0.5">${currentUser.fullName}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Test turi: ${test.testType} ta savol | Sarflangan vaqt: ${test.completionTimeFormatted}</p>
+                  </div>
+                  <div class="flex gap-4 items-center">
+                    <div class="text-center bg-white px-4 py-2 border border-slate-200 rounded-xl min-w-[70px]">
+                      <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-widest font-sans">TO'G'RI</span>
+                      <span class="text-base font-black text-emerald-600">${test.correctAnswers}</span>
+                    </div>
+                    <div class="text-center bg-white px-4 py-2 border border-slate-200 rounded-xl min-w-[70px]">
+                      <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-widest font-sans">XATO</span>
+                      <span class="text-base font-black text-red-600">${test.wrongAnswers}</span>
+                    </div>
+                    <div class="text-center bg-slate-900 text-white px-4 py-2 rounded-xl min-w-[80px]">
+                      <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-widest font-sans">NATIJA</span>
+                      <span class="text-base font-black text-blue-400">${test.percentageScore}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Answer Breakdown Section -->
+                <div class="space-y-4">
+                  <h3 class="font-extrabold text-xs text-slate-550 uppercase tracking-widest font-sans">📋 TASHXIS SAVOLLARI VA TOPILGAN JAVOBLAR</h3>
+                  <div class="space-y-4 font-sans">
+                    ${questionsListHTML}
+                  </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center pt-6 border-t border-slate-200 font-sans">
+                  <p class="text-[10px] text-slate-400">
+                    Ushbu test natijasi muvaffaqiyatli saqlandi va mustaqil ravishda tasdiqlandi. 
+                  </p>
+                </div>
+              </div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  setTimeout(() => { window.close(); }, 500);
+                }
+              </script>
+            </body>
+          </html>
+        `);
+        win.document.close();
+      }
+    } catch (err) {
+      console.error("Exporting single test failed:", err);
+      alert("Savollar tahlil hisobotini PDF formatiga yuzlashda xatolik yuz berdi");
+    }
   };
 
   // Compute Statistics
@@ -116,6 +409,24 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             </h1>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Siz topshirgan testlar tahlili va natijalar arxivi</p>
           </div>
+        </div>
+
+        {/* Global Export actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={exportAllToJSON}
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-750 dark:text-slate-305 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition rounded-xl active:scale-95 cursor-pointer border border-slate-200/30 dark:border-slate-700 shadow-sm"
+          >
+            <Download size={14} />
+            Eksport (JSON)
+          </button>
+          <button
+            onClick={exportAllToPDF}
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition rounded-xl active:scale-95 cursor-pointer shadow-glow"
+          >
+            <Printer size={14} />
+            Hisobot (PDF)
+          </button>
         </div>
       </div>
 
@@ -248,9 +559,18 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               <XCircle size={24} />
             </button>
             
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Savollar tahlili</h2>
-              <p className="text-sm text-slate-500">{selectedTestDetail.subjectName}</p>
+            <div className="mb-6 flex items-start justify-between gap-4 mr-10 bg-slate-50 dark:bg-slate-800/20 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Savollar tahlili</h2>
+                <p className="text-xs text-slate-500">{selectedTestDetail.subjectName}</p>
+              </div>
+              <button
+                onClick={() => exportSingleTestToPDF(selectedTestDetail)}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition rounded-xl active:scale-95 shadow-glow cursor-pointer whitespace-nowrap"
+              >
+                <Printer size={13} />
+                Tahlilni PDF yuklash
+              </button>
             </div>
 
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
