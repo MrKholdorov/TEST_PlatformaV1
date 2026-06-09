@@ -94,6 +94,22 @@ export default function App() {
 
     bootDbAndSync();
 
+    const handleDbSynced = () => {
+      const savedUser = localStorage.getItem('otp_active_user');
+      if (savedUser) {
+        try {
+          const userObj = JSON.parse(savedUser);
+          const profiles = LocalDbService.getProfiles();
+          const syncedUser = profiles.find(p => p.id === userObj.id);
+          if (syncedUser) {
+            setCurrentUser(syncedUser);
+            localStorage.setItem('otp_active_user', JSON.stringify(syncedUser));
+          }
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('db_synced', handleDbSynced);
+
     // Recover Theme
     const savedTheme = localStorage.getItem('otp_theme') as 'light' | 'dark' || 'light';
     setTheme(savedTheme);
@@ -186,7 +202,7 @@ export default function App() {
   };
 
   // Launch test session workflow
-  const handleStartExam = (subjectId: string, testType: 20 | 30 | 50 | 100) => {
+  const handleStartExam = (subjectId: string, testType: 20 | 30 | 50 | 100, mixedSubjectIds: string[] | undefined, isTimerEnabled: boolean = true, timePerQuestion: number = 1) => {
     if (!currentUser) return;
 
     const subjects = LocalDbService.getSubjects();
@@ -194,7 +210,7 @@ export default function App() {
     if (!sub && subjectId === 'mixed') {
       sub = {
         id: 'mixed',
-        name: "Aralash Savollar (Barcha fanlar)",
+        name: "Aralash Savollar (Tanlangan fanlar)",
         icon: 'Sparkles',
         description: "Barcha mavjud fanlar doirasida aralash tasodifiy test sinovi.",
         totalQuestions: LocalDbService.getQuestions().length,
@@ -211,8 +227,9 @@ export default function App() {
       startedAt: new Date().toISOString(),
       score: 0,
       isCompleted: false,
-      timeLeftSeconds: testType * 60, // 1 min per question
-      answers: {}
+      timeLeftSeconds: isTimerEnabled ? testType * timePerQuestion * 60 : null,
+      answers: {},
+      mixedSubjectIds
     };
 
     LocalDbService.saveSession(newSession);
@@ -222,7 +239,13 @@ export default function App() {
   };
 
   // Quiz completion trigger
-  const handleExamComplete = (score: number, percentage: number, durationSeconds: number) => {
+  const handleExamComplete = (
+    score: number, 
+    percentage: number, 
+    durationSeconds: number,
+    quizQuestions?: any[],
+    quizAnswers?: Record<string, 'A' | 'B' | 'C' | 'D'>
+  ) => {
     if (!currentUser || !activeSubject || !activeSession) return;
 
     const formats = (s: number) => {
@@ -242,7 +265,9 @@ export default function App() {
       percentageScore: percentage,
       completionTimeSeconds: durationSeconds,
       completionTimeFormatted: formats(durationSeconds),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      questions: quizQuestions,
+      answers: quizAnswers
     };
 
     LocalDbService.saveResult(newResult);
@@ -255,19 +280,32 @@ export default function App() {
       sendAdminNotification(`🏆 <b>Yangi rekord natija!</b>\n\n• O'quvchi: <b>${currentUser.fullName}</b>\n• Fan: <b>${activeSubject.name}</b>\n• Natija: <b>${percentage}%</b> (${score}/${activeSession.testType} ta to'g'ri)\n• Vaqt: ${formats(durationSeconds)}`);
     }
 
-    const sessionQuestions = LocalDbService.getQuestions().filter(q => q.subjectId === activeSubject.id);
-    const mistakes = evaluateMistakes(activeSession, sessionQuestions);
+    const sessionQuestions = quizQuestions || LocalDbService.getQuestions().filter(q => q.subjectId === activeSubject.id);
+    const sessionWithAnswers = quizAnswers ? { ...activeSession, answers: quizAnswers } : activeSession;
+    const mistakes = evaluateMistakes(sessionWithAnswers, sessionQuestions);
     mistakes.forEach(m => LocalDbService.saveMistake(m));
 
     const stats = updateUserStats(currentUser.id, false, false, false, percentage);
     const newlyUnlocked = evaluateAchievements(currentUser.id, stats, newResult);
 
+    const ACHIEVEMENT_NAMES: Record<string, string> = {
+      'first_test': 'Ilk qadam',
+      '10_tests': 'O\'quvchi',
+      '50_tests': 'Mutaxassis',
+      '100_tests': 'Bilimdon',
+      'accuracy_master': 'Aql charxi',
+      'fast_responder': 'Yashin tezligi',
+      'first_duel': 'Jangchi',
+      '10_duel_wins': 'Yengilmas'
+    };
+
     if (newlyUnlocked.length > 0) {
       newlyUnlocked.forEach(ach => {
-        LocalDbService.addNotification('🏆 Yangi yutuq!', `Tabriklaymiz! Siz yangi "${ach.type}" yutug'iga erishdingiz.`, 'success', currentUser.id);
+        const title = ACHIEVEMENT_NAMES[ach.type] || ach.type;
+        LocalDbService.addNotification('🏆 Yangi yutuq!', `Tabriklaymiz! Siz yangi "${title}" yutug'iga erishdingiz.`, 'success', currentUser.id);
         
         if (currentUser.telegramId) {
-          sendTelegramNotification(currentUser.telegramId, `🏆 <b>Tabriklaymiz!</b>\n\nYangi yutuq qo'lga kiritildi: <b>${ach.type}</b>\n\nDavom eting!`);
+          sendTelegramNotification(currentUser.telegramId, `🏆 <b>Tabriklaymiz!</b>\n\nYangi yutuq qo'lga kiritildi: <b>${title}</b>\n\nDavom eting!`);
         }
       });
     }
@@ -391,7 +429,7 @@ export default function App() {
                       />
                       
                       {/* Dropdown Container */}
-                      <div className="absolute right-0 mt-2.5 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-850 dark:text-slate-100 animate-in fade-in slide-in-from-top-3 duration-250">
+                      <div className="fixed top-[72px] left-4 right-4 sm:absolute sm:top-auto sm:left-auto sm:-right-4 sm:mt-2.5 w-auto sm:w-96 max-w-sm mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden text-slate-850 dark:text-slate-100 animate-in fade-in slide-in-from-top-3 duration-250">
                         
                         {/* Header */}
                         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 select-none">
@@ -629,7 +667,7 @@ export default function App() {
 
           // If showing a contact aloqa page
           if (activeView === 'contact') {
-            return <ContactView />;
+            return <ContactView onNavigate={setActiveView} />;
           }
 
           // If Admin email is validated, load full administrative console dashboard
@@ -640,11 +678,11 @@ export default function App() {
           // Additional Views from Dropdown
           if (currentUser) {
             if (activeView === 'profile') return <ProfilePage currentUser={currentUser} onNavigate={setActiveView} />;
-            if (activeView === 'mistakes') return <MistakesView currentUser={currentUser} />;
-            if (activeView === 'achievements') return <AchievementsView currentUser={currentUser} />;
-            if (activeView === 'statistics') return <StatisticsView currentUser={currentUser} />;
+            if (activeView === 'mistakes') return <MistakesView currentUser={currentUser} onNavigate={setActiveView} />;
+            if (activeView === 'achievements') return <AchievementsView currentUser={currentUser} onNavigate={setActiveView} />;
+            if (activeView === 'statistics') return <StatisticsView currentUser={currentUser} onNavigate={setActiveView} />;
             if (activeView === 'duels') return <DuelsView currentUser={currentUser} onNavigate={setActiveView} />;
-            if (activeView === 'mentor') return <AIMentorView currentUser={currentUser} />;
+            if (activeView === 'mentor') return <AIMentorView currentUser={currentUser} onNavigate={setActiveView} />;
             if (activeView === 'subjects') return <SubjectsView currentUser={currentUser} onStartExam={handleStartExam} onNavigate={setActiveView} />;
             if (activeView === 'rankings') return <RankingsView currentUser={currentUser} onNavigate={setActiveView} />;
             if (activeView === 'history') return <HistoryView currentUser={currentUser} onNavigate={setActiveView} />;
@@ -655,6 +693,7 @@ export default function App() {
                 onLogOut={handleLogOut} 
                 theme={theme} 
                 onToggleTheme={handleToggleTheme} 
+                onNavigate={setActiveView}
               />
             );
           }

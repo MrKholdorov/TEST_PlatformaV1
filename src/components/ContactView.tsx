@@ -4,10 +4,14 @@
  */
 
 import React from 'react';
-import { Phone, CheckCircle, Mail, MessageSquare, Send, Globe } from 'lucide-react';
+import { Phone, CheckCircle, Mail, MessageSquare, Send, Globe, ArrowLeft } from 'lucide-react';
 import { LocalDbService } from '../db/localDb';
 
-export const ContactView: React.FC = () => {
+interface Props {
+  onNavigate: (view: any) => void;
+}
+
+export const ContactView: React.FC<Props> = ({ onNavigate }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const target = e.target as HTMLFormElement;
@@ -25,16 +29,28 @@ export const ContactView: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-8 px-4" id="contact-view">
-      {/* Page header */}
-      <div className="text-center mb-10">
-        <span className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full">ALQA BO'LIMI</span>
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mt-3 select-none">
-          Biz Bilan Aloqa
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm sm:text-base">
-          Tizim bo'yicha taklif, savol yoki muammolar yuzasidan istalgan vaqtda murojaat qilishingiz mumkin.
-        </p>
+    <div className="w-full max-w-4xl mx-auto py-6 px-4 animate-in fade-in duration-300" id="contact-view">
+      {/* Header width back button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-150 dark:border-slate-800 pb-5 mb-8">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-95 border border-slate-200/30 dark:border-slate-700 shadow-sm cursor-pointer shrink-0"
+            aria-label="Ortga qaytish"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+              <Phone size={24} />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Biz Bilan Aloqa</h1>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5">Tizim bo'yicha taklif, savol yoki muammolar yuzasidan murojaat qiling</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -62,7 +78,7 @@ export const ContactView: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-400 font-bold uppercase">Telegram qo'llab-quvvatlash</p>
-                  <a href="https://t.me/MrKholdorov" target="_blank" rel="noopener noreferrer" className="text-sm font-extrabold text-slate-850 dark:text-slate-250 hover:text-blue-600 transition">@MrKholdorov</a>
+                  <a href="https://t.me/MrKholdorov" target="_blank" rel="noopener noreferrer" className="text-sm font-extrabold text-slate-855 dark:text-slate-255 hover:text-blue-600 transition">@MrKholdorov</a>
                 </div>
               </div>
 
@@ -101,7 +117,7 @@ export const ContactView: React.FC = () => {
 
         {/* Dynamic feedback form */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-premium">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">Murojaat Jo'natish</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 font-sans">Murojaat Jo'natish</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4 text-left">
             <div>
@@ -136,7 +152,7 @@ export const ContactView: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition duration-150 shadow-glow flex items-center justify-center gap-2 active:scale-95"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition duration-150 shadow-glow flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
             >
               <MessageSquare size={16} />
               Xabarni Yuborish

@@ -52,8 +52,9 @@ export interface TestSession {
   completedAt?: string;
   score: number;
   isCompleted: boolean;
-  timeLeftSeconds: number;
+  timeLeftSeconds: number | null;
   answers: Record<string, 'A' | 'B' | 'C' | 'D'>; // questionId -> selectedOption
+  mixedSubjectIds?: string[];
 }
 
 export interface TestResult {
@@ -69,6 +70,8 @@ export interface TestResult {
   completionTimeSeconds: number;
   rankingPosition?: number;
   createdAt: string;
+  questions?: Question[];
+  answers?: Record<string, 'A' | 'B' | 'C' | 'D'>;
 }
 
 export interface Ranking {

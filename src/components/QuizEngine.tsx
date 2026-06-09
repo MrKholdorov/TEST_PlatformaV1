@@ -4,14 +4,20 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, HelpCircle, CheckCircle, AlertTriangle, XCircle, ArrowRight, ArrowLeft, Zap } from 'lucide-react';
+import { Clock, HelpCircle, CheckCircle, AlertTriangle, XCircle, ArrowRight, ArrowLeft, Zap, ShieldAlert } from 'lucide-react';
 import { Question, TestSession, Subject } from '../types';
 import { LocalDbService } from '../db/localDb';
 
 interface QuizEngineProps {
   session: TestSession;
   subject: Subject;
-  onComplete: (score: number, percentage: number, durationSeconds: number) => void;
+  onComplete: (
+    score: number, 
+    percentage: number, 
+    durationSeconds: number, 
+    questions?: Question[], 
+    answers?: Record<string, 'A' | 'B' | 'C' | 'D'>
+  ) => void;
   onCancel: () => void;
 }
 
@@ -29,7 +35,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   const [questions, setQuestions] = useState<Question[]>(() => {
     let allQuestions = [];
     if (subject.id === 'mixed') {
-      allQuestions = LocalDbService.getQuestions();
+      if (session.mixedSubjectIds && session.mixedSubjectIds.length > 0) {
+        allQuestions = LocalDbService.getQuestions().filter(q => session.mixedSubjectIds!.includes(q.subjectId));
+      } else {
+        allQuestions = LocalDbService.getQuestions();
+      }
     } else {
       allQuestions = LocalDbService.getQuestions().filter(q => q.subjectId === subject.id);
     }
@@ -84,11 +94,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedAnswer, setSelectedAnswer] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
   const [showFeedback, setShowFeedback] = useState<boolean>(false);
-  const [timeLeft, setTimeLeft] = useState<number>(session.timeLeftSeconds);
+  const [timeLeft, setTimeLeft] = useState<number | null>(session.timeLeftSeconds);
   const [userAnswers, setUserAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>(session.answers || {});
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const totalDurationSeconds = session.testType * 60; // 1 min per question
+  const totalDurationSeconds = session.timeLeftSeconds || (session.testType * 60);
 
   // Find the first unanswered question
   useEffect(() => {
@@ -100,8 +110,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
 
   // Start countdown timer
   useEffect(() => {
+    if (timeLeft === null) return;
+
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
+        if (prev === null) return null;
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           handleAutoSubmit();
@@ -123,7 +136,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [userAnswers]);
+  }, [userAnswers, timeLeft]);
 
   const currentQuestion = questions[currentIndex];
 
@@ -177,9 +190,9 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
     });
 
     const percentage = Math.round((correctCount / questions.length) * 100);
-    const timeSpentSeconds = totalDurationSeconds - timeLeft;
+    const timeSpentSeconds = timeLeft !== null ? totalDurationSeconds - timeLeft : Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000);
 
-    onComplete(correctCount, percentage, timeSpentSeconds);
+    onComplete(correctCount, percentage, timeSpentSeconds, questions, finalAnswers);
   };
 
   const formatTime = (sec: number) => {
@@ -189,8 +202,8 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   };
 
   // Warning calculations
-  const is5MinuteWarning = timeLeft <= 300; // 5 min
-  const is1MinuteCritical = timeLeft <= 60; // 1 min
+  const is5MinuteWarning = timeLeft !== null && timeLeft <= 300; // 5 min
+  const is1MinuteCritical = timeLeft !== null && timeLeft <= 60; // 1 min
 
   if (!currentQuestion) {
     return (
@@ -204,7 +217,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
   // Circular progress stroke offset calculation
   const circleRadius = 24;
   const circumference = 2 * Math.PI * circleRadius;
-  const strokeDashoffset = circumference - (timeLeft / totalDurationSeconds) * circumference;
+  const strokeDashoffset = timeLeft !== null ? circumference - (timeLeft / totalDurationSeconds) * circumference : 0;
 
   return (
     <div className="w-full max-w-4xl mx-auto py-4 px-4" id="quiz-engine-view">
@@ -219,43 +232,51 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
             <span className="text-xs font-sans tracking-tight font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-md">
               Test turi: {session.testType} talik
             </span>
+            {timeLeft === null && (
+              <span className="text-xs font-sans tracking-tight font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md flex items-center gap-1">
+                <ShieldAlert size={12} />
+                Timersiz rejim
+              </span>
+            )}
           </div>
         </div>
 
         {/* Circular Countdown Tracker */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative w-14 h-14 flex items-center justify-center">
-            {/* SVG circular track */}
-            <svg className="absolute w-full h-full rotate-90 transform">
-              <circle
-                cx="28"
-                cy="28"
-                r={circleRadius}
-                className="stroke-slate-100 dark:stroke-slate-800"
-                strokeWidth="4"
-                fill="none"
-              />
-              <circle
-                cx="28"
-                cy="28"
-                r={circleRadius}
-                className={`stroke-current transition-all duration-1000 ${is1MinuteCritical ? 'text-red-500 animate-pulse' : is5MinuteWarning ? 'text-amber-500' : 'text-blue-600'}`}
-                strokeWidth="4"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                fill="none"
-              />
-            </svg>
-            <Clock size={16} className={`absolute ${is1MinuteCritical ? 'text-red-500 animate-bounce' : is5MinuteWarning ? 'text-amber-500' : 'text-slate-400'}`} />
+        {timeLeft !== null && (
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="relative w-14 h-14 flex items-center justify-center">
+              {/* SVG circular track */}
+              <svg className="absolute w-full h-full rotate-90 transform">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={circleRadius}
+                  className="stroke-slate-100 dark:stroke-slate-800"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={circleRadius}
+                  className={`stroke-current transition-all duration-1000 ${is1MinuteCritical ? 'text-red-500 animate-pulse' : is5MinuteWarning ? 'text-amber-500' : 'text-blue-600'}`}
+                  strokeWidth="4"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
+              <Clock size={16} className={`absolute ${is1MinuteCritical ? 'text-red-500 animate-bounce' : is5MinuteWarning ? 'text-amber-500' : 'text-slate-400'}`} />
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 font-bold uppercase">Qolgan vaqt</p>
+              <p className={`font-sans tracking-tight text-lg font-black leading-none ${is1MinuteCritical ? 'text-red-500 animate-[pulse_1s_infinite]' : is5MinuteWarning ? 'text-amber-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                {formatTime(timeLeft)}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Qolgan vaqt</p>
-            <p className={`font-sans tracking-tight text-lg font-black leading-none ${is1MinuteCritical ? 'text-red-500 animate-[pulse_1s_infinite]' : is5MinuteWarning ? 'text-amber-500' : 'text-slate-800 dark:text-slate-200'}`}>
-              {formatTime(timeLeft)}
-            </p>
-          </div>
-        </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Fast-mode toggle option */}

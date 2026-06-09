@@ -1,10 +1,11 @@
 import React from 'react';
 import { Achievement } from '../types';
 import { LocalDbService } from '../db/localDb';
-import { Trophy, ShieldCheck, Flame, Star, Target, Zap, Clock, Award, Users } from 'lucide-react';
+import { Trophy, ShieldCheck, Flame, Star, Target, Zap, Clock, Award, Users, ArrowLeft } from 'lucide-react';
 
 interface Props {
   currentUser: any;
+  onNavigate: (view: any) => void;
 }
 
 const ALL_ACHIEVEMENTS = [
@@ -18,19 +19,32 @@ const ALL_ACHIEVEMENTS = [
   { id: '10_duel_wins', title: 'Yengilmas', description: 'Duelda 10 marta g\'alaba qozondingiz', icon: Zap, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', border: 'border-rose-200 dark:border-rose-800' },
 ];
 
-export const AchievementsView: React.FC<Props> = ({ currentUser }) => {
+export const AchievementsView: React.FC<Props> = ({ currentUser, onNavigate }) => {
   const userAchievements = LocalDbService.getAchievements(currentUser.id).map(a => a.type);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8 space-y-8">
-      <div className="flex items-center gap-4 py-4 text-center sm:text-left justify-center sm:justify-start">
-         <div className="w-14 h-14 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-2xl flex items-center justify-center shadow-sm">
-            <Trophy size={28} />
-         </div>
-         <div className="text-left">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Yutuqlar doskasi</h1>
-            <p className="text-sm font-medium text-slate-500 mt-1">Platformada ko'rsatgan faolligingiz uchun nishonlar.</p>
-         </div>
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-8 animate-in fade-in duration-300">
+      {/* Header width back button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-150 dark:border-slate-800 pb-5">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-95 border border-slate-200/30 dark:border-slate-700 shadow-sm cursor-pointer shrink-0"
+            aria-label="Ortga qaytish"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+              <Trophy size={24} />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">Yutuqlar doskasi</h1>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5">Platformada ko'rsatgan faolligingiz uchun nishonlar</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">

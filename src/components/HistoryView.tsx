@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { History, ArrowLeft, TrendingUp, CheckCircle, XCircle, Award } from 'lucide-react';
-import { TestResult, Profile } from '../types';
+import { TestResult, Profile, Question } from '../types';
 import { LocalDbService } from '../db/localDb';
 import { Certificate } from './Certificate';
 
@@ -15,6 +15,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 }) => {
   const [results, setResults] = useState<TestResult[]>([]);
   const [reviewedCertificate, setReviewedCertificate] = useState<TestResult | null>(null);
+  const [selectedTestDetail, setSelectedTestDetail] = useState<TestResult | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -161,7 +162,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               {results.map((r) => (
                 <div 
                   key={r.id} 
-                  className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800/80 rounded-2xl"
+                  className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 border rounded-2xl transition ${r.questions && r.answers ? 'bg-slate-50/50 dark:bg-slate-800/20 border-slate-100 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer' : 'bg-slate-50/20 dark:bg-slate-900/20 border-slate-100/50 dark:border-slate-800/30 opacity-80'}`}
+                  onClick={() => r.questions && r.answers && setSelectedTestDetail(r)}
                 >
                   <div className="flex gap-3 items-center">
                     {r.percentageScore >= 60 ? (
@@ -170,9 +172,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                       <XCircle className="text-red-500 shrink-0" size={24} />
                     )}
                     <div>
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{r.subjectName}</h4>
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">
+                        {r.subjectName}
+                      </h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">
                         Sana: {new Date(r.createdAt).toLocaleDateString()} | Turi: {r.testType} talik
+                        {r.questions && r.answers && (
+                          <span className="ml-2 text-blue-500 font-semibold">• Tahlilni ko'rish</span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -192,7 +199,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
                     {r.percentageScore >= 60 ? (
                       <button
-                        onClick={() => setReviewedCertificate(r)}
+                        onClick={(e) => { e.stopPropagation(); setReviewedCertificate(r); }}
                         className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-3 py-1.5 rounded-xl transition cursor-pointer"
                       >
                         Sertifikat
@@ -210,7 +217,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 
       {/* Certificate popup inside history panel */}
       {reviewedCertificate && (
-        <div className="fixed inset-0 z-50 bg-[#000000]/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[60] bg-[#000000]/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="relative w-full max-w-4xl my-8">
             <button
               onClick={() => setReviewedCertificate(null)}
@@ -226,6 +233,63 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               date={new Date(reviewedCertificate.createdAt).toLocaleDateString()}
               certificateNumber={reviewedCertificate.id.toUpperCase().replace('RES-', 'CERT-').substring(0, 14)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Details modal popup */}
+      {selectedTestDetail && selectedTestDetail.questions && selectedTestDetail.answers && (
+        <div className="fixed inset-0 z-[60] bg-[#000000]/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-3xl my-8 bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-premium">
+            <button
+              onClick={() => setSelectedTestDetail(null)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition"
+            >
+              <XCircle size={24} />
+            </button>
+            
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Savollar tahlili</h2>
+              <p className="text-sm text-slate-500">{selectedTestDetail.subjectName}</p>
+            </div>
+
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+              {selectedTestDetail.questions.map((q, index) => {
+                const userAnswer = selectedTestDetail.answers![q.id];
+                const isCorrect = userAnswer === q.correctAnswer;
+                
+                return (
+                  <div key={q.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <p className="font-semibold text-slate-900 dark:text-white mb-3 text-sm">
+                      {index + 1}. {q.questionText}
+                    </p>
+                    <div className="space-y-2">
+                      {(Object.entries(q.options) as [keyof typeof q.options, string][]).map(([key, text]) => {
+                        let bgColor = "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700";
+                        let textColor = "text-slate-700 dark:text-slate-300";
+                        
+                        if (key === q.correctAnswer) {
+                          bgColor = "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-400 dark:border-emerald-700";
+                          textColor = "text-emerald-800 dark:text-emerald-300 font-bold";
+                        } else if (key === userAnswer && !isCorrect) {
+                          bgColor = "bg-red-100 dark:bg-red-900/30 border-red-400 dark:border-red-700";
+                          textColor = "text-red-800 dark:text-red-300 font-bold";
+                        }
+
+                        return (
+                          <div key={key} className={`flex items-center gap-3 p-3 rounded-xl border text-sm ${bgColor} ${textColor}`}>
+                            <span className="w-6 h-6 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/20 font-bold shrink-0 text-xs">
+                              {key}
+                            </span>
+                            <span>{text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

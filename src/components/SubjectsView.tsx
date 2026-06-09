@@ -6,7 +6,7 @@ import { DynamicIcon } from './DynamicIcon';
 
 interface SubjectsViewProps {
   currentUser: Profile;
-  onStartExam: (subjectId: string, testType: 20 | 30 | 50 | 100) => void;
+  onStartExam: (subjectId: string, testType: 20 | 30 | 50 | 100, mixedSubjectIds: string[] | undefined, isTimerEnabled: boolean, timePerQuestion: number) => void;
   onNavigate: (view: string) => void;
 }
 
@@ -19,6 +19,9 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
   const [results, setResults] = useState<TestResult[]>([]);
   const [selectedExamType, setSelectedExamType] = useState<20 | 30 | 50 | 100>(20);
   const [activeSubjectForExam, setActiveSubjectForExam] = useState<Subject | null>(null);
+  const [selectedMixedSubjects, setSelectedMixedSubjects] = useState<string[]>([]);
+  const [isTimerEnabled, setIsTimerEnabled] = useState<boolean>(true);
+  const [timePerQuestion, setTimePerQuestion] = useState<number>(1);
 
   useEffect(() => {
     loadData();
@@ -75,14 +78,15 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
         onClick={() => {
           const virtualMixedSubject = {
             id: 'mixed',
-            name: "Aralash Savollar (Barcha fanlar)",
+            name: "Aralash Savollar (Tanlangan fanlar)",
             icon: 'Sparkles',
-            description: "Matematika, Ona tili va adabiyot, Ingliz tili va Tarix fanlarining barcha savollarini o'zi ichiga olgan aralash test rejimi.",
+            description: "O'zingiz tanlagan fanlardan aralash test rejimi.",
             totalQuestions: LocalDbService.getQuestions().length,
-            progress: results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
-              ? Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore)) 
+            progress: results.filter(r => r.subjectName === "Aralash Savollar (Tanlangan fanlar)").length > 0 
+              ? Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Tanlangan fanlar)").map(r => r.percentageScore)) 
               : 0
           };
+          setSelectedMixedSubjects(subjects.map(s => s.id));
           setActiveSubjectForExam(virtualMixedSubject);
         }}
         className="relative overflow-hidden bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white rounded-3xl p-6 shadow-premium cursor-pointer group hover:shadow-glow transition-all duration-300 border border-white/5"
@@ -112,8 +116,8 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
         <div className="relative mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-100 font-medium">
           <p>
             O'rtacha natijangiz: <span className="font-bold underline text-white font-sans tracking-tight">
-              {results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").length > 0 
-                ? `${Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Barcha fanlar)").map(r => r.percentageScore))}%` 
+              {results.filter(r => r.subjectName === "Aralash Savollar (Tanlangan fanlar)").length > 0 
+                ? `${Math.max(...results.filter(r => r.subjectName === "Aralash Savollar (Tanlangan fanlar)").map(r => r.percentageScore))}%` 
                 : "Hali topshirilmagan"}
             </span>
           </p>
@@ -196,16 +200,72 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               ))}
             </div>
 
+            {/* Mixed Subject Optimization */}
+            {activeSubjectForExam.id === 'mixed' && (
+              <div className="space-y-2 mt-4">
+                <p className="text-xs font-bold text-slate-900 dark:text-white">Qaysi fanlardan savol tushsin?</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                   {subjects.map(sub => (
+                     <label key={sub.id} className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer">
+                       <input 
+                         type="checkbox" 
+                         className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" 
+                         checked={selectedMixedSubjects.includes(sub.id)}
+                         onChange={(e) => {
+                           if (e.target.checked) {
+                             setSelectedMixedSubjects(prev => [...prev, sub.id]);
+                           } else {
+                             setSelectedMixedSubjects(prev => prev.filter(id => id !== sub.id));
+                           }
+                         }}
+                       />
+                       <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{sub.name}</span>
+                     </label>
+                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Timer Settings */}
+            <div className="space-y-4 mt-6">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-900 dark:text-white">Vaqt chegarasi (taymer) bilan ishlash</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={isTimerEnabled} onChange={(e) => setIsTimerEnabled(e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {isTimerEnabled && (
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">1 ta savol uchun vaqt (daqiqa): {timePerQuestion}</label>
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="5" 
+                    step="1" 
+                    value={timePerQuestion} 
+                    onChange={(e) => setTimePerQuestion(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-blue-600"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-bold">
+                    <span>1 daq</span>
+                    <span>5 daq</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Info and Warning */}
-            <div className="flex gap-2 items-start bg-slate-50 dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 text-slate-400">
+            <div className="flex gap-2 items-start bg-slate-50 dark:bg-slate-900 rounded-2xl p-3 border border-slate-100 dark:border-slate-800 text-slate-400 mt-6">
               <ShieldAlert size={16} className="text-slate-400 shrink-0 mt-0.5" />
               <p className="text-[10px] leading-relaxed">
-                Tizimda har bir savol uchun 1 daqiqa vaqt ajratiladi. Imtihon boshlagach orqaga qaytib bo'lmaydi. Savollar tasodifiy tushadi.
+                {isTimerEnabled ? `Tizimda har bir savol uchun ${timePerQuestion} daqiqa vaqt ajratiladi.` : 'Siz timersiz rejimni tanladingiz. Vaqt chegaralanmagan.'} Imtihon boshlagach orqaga qaytib bo'lmaydi. Savollar tasodifiy tushadi.
               </p>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 justify-end pt-2">
+            <div className="flex gap-3 justify-end pt-4">
               <button
                 onClick={() => setActiveSubjectForExam(null)}
                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
@@ -215,8 +275,12 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
               <button
                 onClick={() => {
                   const subId = activeSubjectForExam.id;
+                  if (subId === 'mixed' && selectedMixedSubjects.length === 0) {
+                     alert("Iltimos, hech bo'lmaganda bitta fanni tanlang.");
+                     return;
+                  }
                   setActiveSubjectForExam(null);
-                  onStartExam(subId, selectedExamType);
+                  onStartExam(subId, selectedExamType, selectedMixedSubjects, isTimerEnabled, timePerQuestion);
                 }}
                 className="px-5 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition active:scale-95 shadow-glow cursor-pointer"
               >

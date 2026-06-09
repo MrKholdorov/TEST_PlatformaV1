@@ -5,7 +5,7 @@ import {
   User, Mail, Phone, Lock, Eye, EyeOff, Save, RefreshCw, 
   Trash2, Bell, Sparkles, Smartphone, ShieldCheck, Sun, Moon, 
   Info, AlertTriangle, CheckCircle, ChevronRight, Settings, Languages,
-  Camera, Upload
+  Camera, Upload, ArrowLeft
 } from 'lucide-react';
 import { getTelegramUser } from '../lib/telegramClient';
 
@@ -15,6 +15,7 @@ interface SettingsViewProps {
   onLogOut: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  onNavigate?: (view: any) => void;
 }
 
 type TabType = 'account' | 'telegram' | 'preferences' | 'security';
@@ -24,7 +25,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onProfileUpdate, 
   onLogOut,
   theme,
-  onToggleTheme 
+  onToggleTheme,
+  onNavigate
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('account');
   
@@ -296,11 +298,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     <div className="w-full max-w-4xl mx-auto px-4 py-8 animate-scale-up" id="settings-view-container">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 text-left border-b border-slate-100 dark:border-slate-800 pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <span className="text-blue-600">⚙️</span> Tizim Sozlamalari
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">Loyiha sozlamalari, shaxsiy hisob parametrlari, integratsiyalar va interfeys interaktivligi</p>
+        <div className="flex items-center gap-4">
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('dashboard')}
+              className="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 flex items-center justify-center transition active:scale-95 border border-slate-200/30 dark:border-slate-700 shadow-sm cursor-pointer shrink-0"
+              aria-label="Ortga qaytish"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <span className="text-blue-600">⚙️</span> Tizim Sozlamalari
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">Loyiha sozlamalari, shaxsiy hisob parametrlari, integratsiyalar va interfeys interaktivligi</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg px-2.5 py-1">v2.1 Stable</span>

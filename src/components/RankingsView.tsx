@@ -16,6 +16,8 @@ export const RankingsView: React.FC<RankingsViewProps> = ({
   const [leaderboardType, setLeaderboardType] = useState<20 | 30 | 50 | 100>(20);
   const [leaderboardList, setLeaderboardList] = useState<Ranking[]>([]);
 
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+
   useEffect(() => {
     loadRankings();
     const interval = setInterval(loadRankings, 4000);
@@ -30,6 +32,12 @@ export const RankingsView: React.FC<RankingsViewProps> = ({
         return a.completionTimeSeconds - b.completionTimeSeconds; // Faster is better
       });
     setLeaderboardList(ranks);
+    setAllProfiles(LocalDbService.getProfiles());
+  };
+
+  const getUserAvatar = (userId: string, fullName: string) => {
+    const profile = allProfiles.find(p => p.id === userId);
+    return profile?.avatar;
   };
 
   return (
@@ -100,6 +108,15 @@ export const RankingsView: React.FC<RankingsViewProps> = ({
                     <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0 ${index === 0 ? 'bg-amber-400 text-slate-950' : index === 1 ? 'bg-slate-300 text-slate-950' : index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-50 text-slate-500 dark:bg-slate-800'}`}>
                       {index + 1}
                     </span>
+                    
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                      {getUserAvatar(rank.userId, rank.fullName) ? (
+                        <img src={getUserAvatar(rank.userId, rank.fullName)} alt={rank.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="text-xs font-bold text-slate-400">{rank.fullName.substring(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+
                     <div>
                       <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         {rank.fullName}
