@@ -174,7 +174,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           <img 
             src="/logo.png" 
             alt="Logo" 
-            className="w-12 h-12 rounded-2xl object-cover shadow-premium" 
+            className="w-12 h-12 rounded-xl object-contain" 
             referrerPolicy="no-referrer"
           />
           <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">INTERAKTIV AKADEMIYA</span>

@@ -376,7 +376,7 @@ export default function App() {
             <img 
               src="/logo.png" 
               alt="Online Imtihon Logo" 
-              className="w-9 h-9 rounded-xl object-cover shadow-glow"
+              className="w-9 h-9 rounded-xl object-contain"
               referrerPolicy="no-referrer"
             />
             <div>
